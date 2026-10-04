@@ -20,6 +20,22 @@ Icons.SetIconsType("lucide")
 
 local WindUI
 
+local HexColorCache = {}
+local function HexToColor3(hex)
+	local cached = HexColorCache[hex]
+	if cached == nil then
+		cached = Color3.fromHex(hex)
+		HexColorCache[hex] = cached
+	end
+	return cached
+end
+
+-- 自增 ID：替代 HttpService:GenerateGUID，避免高频调用的开销
+local ThemeCallbackId = 0
+
+-- 已下载网络图片的内存缓存：asset 字符串或 false（加载失败），避免同一 URL 重复请求/写文件
+local ImageAssetCache = {}
+
 local Creator
 Creator = {
 	Font = "rbxassetid://12187365364",
@@ -143,10 +159,12 @@ function Creator.AddSignal(Signal, Function)
 end
 
 function Creator.DisconnectAll()
-	for idx, signal in next, Creator.Signals do
-		local Connection = table.remove(Creator.Signals, idx)
-		Connection:Disconnect()
+	for _, connection in pairs(Creator.Signals) do
+		pcall(function()
+			connection:Disconnect()
+		end)
 	end
+	table.clear(Creator.Signals)
 end
 
 function Creator.SafeCallback(Function, ...)
@@ -224,7 +242,9 @@ end
 
 function Creator.AddFontObject(Object)
 	table.insert(Creator.FontObjects, Object)
-	Creator.UpdateFont(Creator.Font)
+	-- 仅更新新对象：原先每次都全量遍历所有字体对象，
+	-- 创建 N 个元素时会导致 O(N^2) 次 Font.new 调用
+	Object.FontFace = Font.new(Creator.Font, Object.FontFace.Weight, Object.FontFace.Style)
 end
 
 function Creator.UpdateFont(FontId)
@@ -243,7 +263,7 @@ function Creator.GetThemeProperty(Property, Theme)
 		end
 
 		if typeof(value) == "string" and string.sub(value, 1, 1) == "#" then
-			return Color3.fromHex(value)
+			return HexToColor3(value)
 		end
 
 		if typeof(value) == "Color3" then
@@ -338,9 +358,24 @@ function Creator.AddLangObject(idx)
 end
 
 function Creator.UpdateTheme(TargetObject, isTween, isTweenTarget, Duration, EasingStyle, EasingDirection)
+	-- 单次遍历内的属性解析缓存：N 个对象共享少量 ColorKey，
+	-- 避免对同一 ColorKey 重复执行 GetThemeProperty 的递归查找。
+	-- 缓存仅在本次调用内有效，主题表被修改后下次调用会重新解析，行为不变。
+	local propCache = {}
+	local function GetCachedThemeProperty(ColorKey)
+		local cached = propCache[ColorKey]
+		if cached == nil then
+			local value = Creator.GetThemeProperty(ColorKey, Creator.Theme)
+			-- 用 false 哨兵缓存 nil 结果，避免重复的递归查找
+			propCache[ColorKey] = (value == nil) and false or value
+			return value
+		end
+		return (cached == false) and nil or cached
+	end
+
 	local function ApplyTheme(objData)
 		for Property, ColorKey in pairs(objData.Properties or {}) do
-			local value = Creator.GetThemeProperty(ColorKey, Creator.Theme)
+			local value = GetCachedThemeProperty(ColorKey)
 			if value ~= nil then
 				if typeof(value) == "Color3" then
 					local gradient = objData.Object:FindFirstChild("LibraryGradient")
@@ -473,12 +508,15 @@ function Creator.UpdateLang(newLang)
 		Creator.Language = newLang
 	end
 
-	for i = 1, #Creator.LocalizationObjects do
+	-- 倒序遍历并用 table.remove 清理已销毁对象：
+	-- 原先正序遍历中置 nil 会产生数组空洞，导致 # 提前截断，
+	-- 后续对象永远收不到语言更新且内存无法释放
+	for i = #Creator.LocalizationObjects, 1, -1 do
 		local data = Creator.LocalizationObjects[i]
 		if data.Object and data.Object.Parent ~= nil then
 			Creator.SetLangForObject(i)
 		else
-			Creator.LocalizationObjects[i] = nil
+			table.remove(Creator.LocalizationObjects, i)
 		end
 	end
 end
@@ -639,14 +677,15 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
 		end
 
 		local delta = input.Position - dragStart
-		Creator.Tween(mainFrame, 0.02, {
-			Position = UDim2.new(
-				startPos.X.Scale,
-				startPos.X.Offset + delta.X,
-				startPos.Y.Scale,
-				startPos.Y.Offset + delta.Y
-			),
-		}):Play()
+		-- 拖拽是逐帧高频回调，直接赋值代替每帧创建 Tween：
+		-- 原先每次 InputChanged 都新建一个 0.02s Tween 并堆积播放，
+		-- 不仅开销大还会造成拖拽延迟感
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
 	end
 
 	for _, dragFrame in pairs(dragFrames) do
@@ -747,6 +786,9 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed, Them
 	Folder = Folder or "Temp"
 	Name = Creator.SanitizeFilename(Name)
 
+	-- 只解析一次图标：原先在构造参数和分支判断中共调用两次 Creator.Icon
+	local CachedIcon = Creator.Icon(Img)
+
 	local ImageFrame = New("Frame", {
 		Size = UDim2.new(0, 0, 0, 0),
 		BackgroundTransparency = 1,
@@ -755,7 +797,7 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed, Them
 			Size = UDim2.new(1, 0, 1, 0),
 			BackgroundTransparency = 1,
 			ScaleType = "Crop",
-			ThemeTag = (Creator.Icon(Img) or Themed) and {
+			ThemeTag = (CachedIcon or Themed) and {
 				ImageColor3 = IsThemeTag and (ThemeTagName or "Icon") or nil,
 			} or nil,
 		}, {
@@ -764,7 +806,7 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed, Them
 			}),
 		}),
 	})
-	if Creator.Icon(Img) then
+	if CachedIcon then
 		ImageFrame.ImageLabel:Destroy()
 
 		local IconLabel = Icons.Image({
@@ -778,44 +820,75 @@ function Creator.Image(Img, Name, Corner, Folder, Type, IsThemeTag, Themed, Them
 		IconLabel.Parent = ImageFrame
 	elseif string.find(Img, "http") and not string.find(Img, "roblox.com") then
 		local FileName = "WindUI/" .. Folder .. "/assets/." .. Type .. "-" .. Name .. ".png"
-		local success, response = pcall(function()
-			task.spawn(function()
-				local response = Creator.Request
-						and Creator.Request({
-							Url = Img,
-							Method = "GET",
-						}).Body
-					or {}
-
-				if not RunService:IsStudio() and writefile then
-					writefile(FileName, response)
-				end
-				--ImageFrame.ImageLabel.Image = getcustomasset(FileName)
-
-				local assetSuccess, asset = pcall(getcustomasset, FileName)
-				if assetSuccess then
-					ImageFrame.ImageLabel.Image = asset
-				else
-					warn(
-						string.format(
-							"[ WindUI.Creator ] Failed to load custom asset '%s': %s",
-							FileName,
-							tostring(asset)
-						)
-					)
-					ImageFrame:Destroy()
-
-					return
-				end
-			end)
-		end)
-		if not success then
-			warn(
-				"[ WindUI.Creator ]  '" .. identifyexecutor()
-					or "Studio" .. "' doesnt support the URL Images. Error: " .. response
-			)
-
+		local cachedAsset = ImageAssetCache[FileName]
+		if cachedAsset then
+			-- 内存缓存命中：同一 URL 的第二个起直接复用，零网络开销
+			ImageFrame.ImageLabel.Image = cachedAsset
+		elseif cachedAsset == false then
+			-- 之前加载失败过，不再重复请求
 			ImageFrame:Destroy()
+		elseif typeof(isfile) == "function"
+			and typeof(getcustomasset) == "function"
+			and isfile(FileName)
+		then
+			-- 磁盘缓存命中：跳过网络请求，直接加载本地文件
+			local assetSuccess, asset = pcall(getcustomasset, FileName)
+			if assetSuccess then
+				ImageAssetCache[FileName] = asset
+				ImageFrame.ImageLabel.Image = asset
+			else
+				ImageAssetCache[FileName] = false
+				warn(
+					string.format(
+						"[ WindUI.Creator ] Failed to load custom asset '%s': %s",
+						FileName,
+						tostring(asset)
+					)
+				)
+				ImageFrame:Destroy()
+			end
+		else
+			local success, response = pcall(function()
+				task.spawn(function()
+					local response = Creator.Request
+							and Creator.Request({
+								Url = Img,
+								Method = "GET",
+							}).Body
+						or {}
+
+					if not RunService:IsStudio() and writefile then
+						writefile(FileName, response)
+					end
+					--ImageFrame.ImageLabel.Image = getcustomasset(FileName)
+
+					local assetSuccess, asset = pcall(getcustomasset, FileName)
+					if assetSuccess then
+						ImageAssetCache[FileName] = asset
+						ImageFrame.ImageLabel.Image = asset
+					else
+						ImageAssetCache[FileName] = false
+						warn(
+							string.format(
+								"[ WindUI.Creator ] Failed to load custom asset '%s': %s",
+								FileName,
+								tostring(asset)
+							)
+						)
+						ImageFrame:Destroy()
+
+						return
+					end
+				end)
+			end)
+			if not success then
+				warn(
+					"[ WindUI.Creator ]  '" .. identifyexecutor()
+						or "Studio" .. "' doesnt support the URL Images. Error: " .. response
+				)
+
+				ImageFrame:Destroy()
+			end
 		end
 	elseif Img == "" then
 		ImageFrame.Visible = false
@@ -895,7 +968,8 @@ function Creator:OnThemeChange(callback)
 		return
 	end
 
-	local id = HttpService:GenerateGUID(false)
+	local id = ThemeCallbackId + 1
+	ThemeCallbackId = id
 	Creator.ThemeChangeCallbacks[id] = callback
 
 	return {
@@ -908,7 +982,7 @@ end
 function Creator:AddColor(base, add, weight)
 	weight = math.clamp(weight or 1, 0, 1)
 	if typeof(add) == "string" then
-		add = Color3.fromHex(add)
+		add = HexToColor3(add)
 	end
 
 	return function(theme)
@@ -916,7 +990,7 @@ function Creator:AddColor(base, add, weight)
 		if typeof(base) == "string" and string.sub(base, 1, 1) ~= "#" then
 			baseColor = Creator.GetThemeProperty(base, theme)
 		elseif typeof(base) == "string" then
-			baseColor = Color3.fromHex(base)
+			baseColor = HexToColor3(base)
 		else
 			baseColor = base
 		end

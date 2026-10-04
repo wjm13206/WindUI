@@ -583,10 +583,36 @@ end
 
 function TabModule:SelectTab(TabIndex)
 	if not TabModule.Tabs[TabIndex].Locked then
+		local prevIndex = TabModule.SelectedTab
 		TabModule.SelectedTab = TabIndex
 
-		for _, TabObject in next, TabModule.Tabs do
-			if not TabObject.Locked then
+		-- 只更新旧选中与新选中两项的样式：
+		-- 原先每次切换都对全部 N 个 Tab 各创建 3~4 个 Tween，
+		-- Tab 多时一次切换产生上百个 Tween，同时播放直接掉帧
+		local function SetTabActiveVisual(TabObject, active)
+			if TabObject.Locked then
+				return
+			end
+			if active then
+				Creator.SetThemeTag(TabObject.UIElements.Main, {
+					ImageColor3 = "TabBackgroundActive",
+					ImageTransparency = "TabBackgroundActiveTransparency",
+				}, 0.15)
+				if TabObject.Border then
+					Creator.SetThemeTag(TabObject.UIElements.Main.Outline, {
+						ImageTransparency = "TabBorderTransparencyActive",
+					}, 0.15)
+				end
+				Creator.SetThemeTag(TabObject.UIElements.Main.Frame.TextLabel, {
+					TextTransparency = "TabTextTransparencyActive",
+				}, 0.15)
+				if TabObject.UIElements.Icon and not TabObject.IconColor then
+					Creator.SetThemeTag(TabObject.UIElements.Icon.ImageLabel, {
+						ImageTransparency = "TabIconTransparencyActive",
+					}, 0.15)
+				end
+				TabObject.Selected = true
+			else
 				Creator.SetThemeTag(TabObject.UIElements.Main, {
 					ImageTransparency = "TabBorderTransparency",
 				}, 0.15)
@@ -606,24 +632,11 @@ function TabModule:SelectTab(TabIndex)
 				TabObject.Selected = false
 			end
 		end
-		Creator.SetThemeTag(TabModule.Tabs[TabIndex].UIElements.Main, {
-			ImageColor3 = "TabBackgroundActive",
-			ImageTransparency = "TabBackgroundActiveTransparency",
-		}, 0.15)
-		if TabModule.Tabs[TabIndex].Border then
-			Creator.SetThemeTag(TabModule.Tabs[TabIndex].UIElements.Main.Outline, {
-				ImageTransparency = "TabBorderTransparencyActive",
-			}, 0.15)
+
+		if prevIndex and TabModule.Tabs[prevIndex] and prevIndex ~= TabIndex then
+			SetTabActiveVisual(TabModule.Tabs[prevIndex], false)
 		end
-		Creator.SetThemeTag(TabModule.Tabs[TabIndex].UIElements.Main.Frame.TextLabel, {
-			TextTransparency = "TabTextTransparencyActive",
-		}, 0.15)
-		if TabModule.Tabs[TabIndex].UIElements.Icon and not TabModule.Tabs[TabIndex].IconColor then
-			Creator.SetThemeTag(TabModule.Tabs[TabIndex].UIElements.Icon.ImageLabel, {
-				ImageTransparency = "TabIconTransparencyActive",
-			}, 0.15)
-		end
-		TabModule.Tabs[TabIndex].Selected = true
+		SetTabActiveVisual(TabModule.Tabs[TabIndex], true)
 
 		task.spawn(function()
 			for _, ContainerObject in next, TabModule.Containers do

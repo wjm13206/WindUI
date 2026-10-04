@@ -271,15 +271,14 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 		if Dropdown.SearchBarEnabled then
 			if not SearchLabel then
 				SearchLabel = CreateInput("Search...", "search", Dropdown.UIElements.Menu, nil, function(val)
+					local query = string.lower(val)
 					for _, tab in next, Dropdown.Tabs do
-						if string.find(string.lower(tab.Name), string.lower(val), 1, true) then
-							tab.UIElements.TabItem.Visible = true
-						else
-							tab.UIElements.TabItem.Visible = false
-						end
-						RecalculateListSize()
-						RecalculateCanvasSize()
+						tab.UIElements.TabItem.Visible = (string.find(tab._LowerName, query, 1, true) ~= nil)
 					end
+					-- 尺寸重算只需做一次：原先在循环内每个选项都触发一次，
+					-- 每次都会读写 AbsoluteContentSize 并设置 Size，引起 N 次布局抖动
+					RecalculateListSize()
+					RecalculateCanvasSize()
 				end, true)
 				SearchLabel.Size = UDim2.new(1, 0, 0, Element.SearchBarHeight)
 				SearchLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -298,6 +297,8 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 					Selected = false,
 					Locked = typeof(Tab) == "table" and Tab.Locked or false,
 					UIElements = {},
+					-- 小写缓存：搜索过滤时复用，避免每次按键都对全部选项重复 string.lower
+					_LowerName = string.lower(typeof(Tab) == "table" and (Tab.Title or "") or Tab),
 				}
 				local TabIcon
 				if TabMain.Icon then
@@ -461,8 +462,6 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 
 				Dropdown.Tabs[Index] = TabMain
 
-				DropdownModule:Display()
-
 				if Type == "Dropdown" then
 					Creator.AddSignal(TabMain.UIElements.TabItem.MouseButton1Click, function()
 						if Dropdown.Locked or TabMain.Locked then
@@ -503,18 +502,23 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 								end
 							end
 						else
-							for Index, TabPisun in next, Dropdown.Tabs do
-								Tween(TabPisun.UIElements.TabItem, 0.1, { ImageTransparency = 1 }):Play()
-								--Tween(TabPisun.UIElements.TabItem.Highlight, 0.1, { ImageTransparency = 1 }):Play()
-								Tween(
-									TabPisun.UIElements.TabItem.Frame.Title.TextLabel,
-									0.1,
-									{ TextTransparency = 0.4 }
-								):Play()
-								if TabPisun.UIElements.TabIcon then
-									Tween(TabPisun.UIElements.TabIcon.ImageLabel, 0.1, { ImageTransparency = 0.2 }):Play()
+							-- 单选：只复位旧选中项 + 高亮新选中项。
+							-- 原先每次点击都对全部 N 个选项各创建 2~3 个 Tween，
+							-- 选项多时一次点击产生数百个 Tween，同时播放直接卡顿
+							for _, TabPisun in next, Dropdown.Tabs do
+								if TabPisun.Selected then
+									TabPisun.Selected = false
+									Tween(TabPisun.UIElements.TabItem, 0.1, { ImageTransparency = 1 }):Play()
+									Tween(
+										TabPisun.UIElements.TabItem.Frame.Title.TextLabel,
+										0.1,
+										{ TextTransparency = 0.4 }
+									):Play()
+									if TabPisun.UIElements.TabIcon then
+										Tween(TabPisun.UIElements.TabIcon.ImageLabel, 0.1, { ImageTransparency = 0.2 }):Play()
+									end
+									break
 								end
-								TabPisun.Selected = false
 							end
 							TabMain.Selected = true
 							Tween(TabMain.UIElements.TabItem, 0.1, { ImageTransparency = TabBackgroundTransparency }):Play()
@@ -544,12 +548,16 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 					end)
 				end
 
-				RecalculateCanvasSize()
-				RecalculateListSize()
 			else
 				require("../../elements/Divider"):New({ Parent = Dropdown.UIElements.Menu.Frame.ScrollingFrame })
 			end
 		end
+
+		-- 刷新完成后再统一更新一次显示文字与菜单尺寸：
+		-- 原先每个选项创建后都各触发一次，重建 N 个选项就做 N 次冗余布局计算
+		DropdownModule:Display()
+		RecalculateCanvasSize()
+		RecalculateListSize()
 
 		-- local maxWidth = Dropdown.MenuWidth or 0
 		-- if maxWidth == 0 then

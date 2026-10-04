@@ -94,6 +94,13 @@ return function(Config)
 
 	local ThumbnailFrame
 	local ImageFrame
+	-- 同一 Element.Color 在创建时会被换算多次（标题/描述/图标/高亮），只计算一次缓存复用
+	local CachedTextColor
+	if typeof(Element.Color) == "string" then
+		CachedTextColor = GetTextColorForHSB(Color3.fromHex(Creator.Colors[Element.Color]))
+	elseif typeof(Element.Color) == "Color3" then
+		CachedTextColor = GetTextColorForHSB(Element.Color)
+	end
 	if Element.Thumbnail then
 		ThumbnailFrame = Creator.Image(
 			Element.Thumbnail,
@@ -118,10 +125,8 @@ return function(Config)
 			"ElementIcon"
 		)
 		--print(Creator.Colors[Element.Color])
-		if typeof(Element.Color) == "string" and not string.find(Element.Image, "rbxthumb") then
-			ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Color3.fromHex(Creator.Colors[Element.Color]))
-		elseif typeof(Element.Color) == "Color3" and not string.find(Element.Image, "rbxthumb") then
-			ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Element.Color)
+		if Element.Color and not string.find(Element.Image, "rbxthumb", 1, true) then
+			ImageFrame.ImageLabel.ImageColor3 = CachedTextColor
 		end
 
 		ImageFrame.Size = UDim2.new(0, ImageSize, 0, ImageSize)
@@ -130,10 +135,6 @@ return function(Config)
 	end
 
 	local function CreateText(Title, Type)
-		local TextColor = typeof(Element.Color) == "string"
-				and GetTextColorForHSB(Color3.fromHex(Creator.Colors[Element.Color]))
-			or typeof(Element.Color) == "Color3" and GetTextColorForHSB(Element.Color)
-
 		return New("TextLabel", {
 			BackgroundTransparency = 1,
 			Text = Title or "",
@@ -142,7 +143,7 @@ return function(Config)
 			ThemeTag = {
 				TextColor3 = not Element.Color and ("Element" .. Type) or nil,
 			},
-			TextColor3 = Element.Color and TextColor or nil,
+			TextColor3 = CachedTextColor,
 			TextTransparency = Type == "Desc" and 0.3 or 0,
 			TextWrapped = true,
 			Size = UDim2.new(Element.Justify == "Between" and 1 or 0, 0, 0, 0),
@@ -452,21 +453,27 @@ return function(Config)
 	Element.UIElements.Locked = Locked
 
 	if Element.Hover then
+		-- Hovering 标志 + 单次 MouseMoved 连接：
+		-- 原先每次 MouseEnter 都新增一个永久 MouseMoved 连接，
+		-- 鼠标进出越多次，后台空转的连接就越多（连接泄漏，越用越卡）
 		Creator.AddSignal(Main.MouseEnter, function()
 			if CanHover then
+				Hovering = true
 				--Tween(Main, 0.12, { ImageTransparency = Element.Color and 0.15 or 0.9 }):Play()
 				Tween(Hover, 0.12, { ImageTransparency = 0.9 }):Play()
 				Tween(HoverOutline, 0.12, { ImageTransparency = 0.8 }):Play()
-				Creator.AddSignal(Main.MouseMoved, function(x, y)
-					Hover.HoverGradient.Offset =
-						Vector2.new(((x - Main.AbsolutePosition.X) / Main.AbsoluteSize.X) - 0.5, 0)
-					HoverOutline.HoverGradient.Offset =
-						Vector2.new(((x - Main.AbsolutePosition.X) / Main.AbsoluteSize.X) - 0.5, 0)
-				end)
+			end
+		end)
+		Creator.AddSignal(Main.MouseMoved, function(x, y)
+			if CanHover and Hovering then
+				local offset = Vector2.new(((x - Main.AbsolutePosition.X) / Main.AbsoluteSize.X) - 0.5, 0)
+				Hover.HoverGradient.Offset = offset
+				HoverOutline.HoverGradient.Offset = offset
 			end
 		end)
 		Creator.AddSignal(Main.InputEnded, function()
 			if CanHover then
+				Hovering = false
 				--Tween(Main, 0.12, { ImageTransparency = Element.Color and 0.05 or 0.93 }):Play()
 				Tween(Hover, 0.12, { ImageTransparency = 1 }):Play()
 				Tween(HoverOutline, 0.12, { ImageTransparency = 1 }):Play()
@@ -490,11 +497,8 @@ return function(Config)
 	end
 
 	function Element:Colorize(obj, prop)
-		if Element.Color then
-			obj[prop] = typeof(Element.Color) == "string"
-					and GetTextColorForHSB(Color3.fromHex(Creator.Colors[Element.Color]))
-				or typeof(Element.Color) == "Color3" and GetTextColorForHSB(Element.Color)
-				or nil
+		if CachedTextColor then
+			obj[prop] = CachedTextColor
 		end
 	end
 

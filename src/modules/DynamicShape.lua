@@ -150,35 +150,23 @@ function DynamicShapeModule:New(Radius, Type, Properties, Children, IsButton, Is
 		return Wrapper
 	end
 
-	function Wrapper:SetType(NewType)
-		Wrapper.Type = NewType
-		local Shape = GetShape(NewType)
-		ImageLabel.Image = Shape.Image
-		ImageLabel.SliceCenter = Shape.Rect
-		Wrapper:SetRadius(Wrapper.Radius)
-		return Wrapper
-	end
-
-	function Wrapper:GetRadius()
-		return Wrapper.Radius
-	end
-
-	function Wrapper:GetType()
-		return Wrapper.Type
-	end
-
-	Wrapper:SetRadius(Radius)
-	Wrapper:SetType(Type)
-
-	Creator.AddSignal(ImageLabel:GetPropertyChangedSignal("AbsoluteSize"), function()
-		local Shape = GetShape(Wrapper.Type)
-		if Shape.AutoChange == false then
+	-- 尺寸自适应监听：AutoChange == false 的形状（如 Square / TL-TR / BL-BR）
+	-- 永远不需要自适应，直接跳过，不创建永久信号连接；
+	-- 需要的形状才建立，且只建立一次（SetType 中按需补建）
+	local SizeWatcher = nil
+	local function EnsureSizeWatcher()
+		if SizeWatcher then
 			return
 		end
+		SizeWatcher = Creator.AddSignal(ImageLabel:GetPropertyChangedSignal("AbsoluteSize"), function()
+			local Shape = GetShape(Wrapper.Type)
+			if Shape.AutoChange == false then
+				return
+			end
 
-		if string.find(Wrapper.Type, "Squircle") then
-			local Glass = string.find(Wrapper.Type, "Glass") and "Glass" or nil
-			local Outline = string.find(Wrapper.Type, "Outline") and "Outline" or nil
+			if string.find(Wrapper.Type, "Squircle", 1, true) then
+				local Glass = string.find(Wrapper.Type, "Glass", 1, true) and "Glass" or nil
+				local Outline = string.find(Wrapper.Type, "Outline", 1, true) and "Outline" or nil
 
 			local X = math.round(ImageLabel.AbsoluteSize.X / Creator.UIScale)
 			local Y = math.round(ImageLabel.AbsoluteSize.Y / Creator.UIScale)
@@ -214,6 +202,31 @@ function DynamicShapeModule:New(Radius, Type, Properties, Children, IsButton, Is
 			end
 		end
 	end)
+	end
+
+	function Wrapper:SetType(NewType)
+		Wrapper.Type = NewType
+		local Shape = GetShape(NewType)
+		ImageLabel.Image = Shape.Image
+		ImageLabel.SliceCenter = Shape.Rect
+		Wrapper:SetRadius(Wrapper.Radius)
+		-- 类型切换后若需要自适应才建立尺寸监听（延迟建立，避免无用连接）
+		if Shape.AutoChange ~= false then
+			EnsureSizeWatcher()
+		end
+		return Wrapper
+	end
+
+	function Wrapper:GetRadius()
+		return Wrapper.Radius
+	end
+
+	function Wrapper:GetType()
+		return Wrapper.Type
+	end
+
+	Wrapper:SetRadius(Radius)
+	Wrapper:SetType(Type)
 
 	return ImageLabel, Wrapper
 end

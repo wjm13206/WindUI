@@ -361,8 +361,8 @@ function SearchBar.new(TabModule, Parent, OnClose)
 		return Tab
 	end
 
-	local function ContainsText(str, query)
-		if not query or query == "" then
+	local function ContainsText(str, lowerQuery)
+		if not lowerQuery or lowerQuery == "" then
 			return false
 		end
 
@@ -370,10 +370,7 @@ function SearchBar.new(TabModule, Parent, OnClose)
 			return false
 		end
 
-		local lowerStr = string.lower(str)
-		local lowerQuery = string.lower(query)
-
-		return string.find(lowerStr, lowerQuery, 1, true) ~= nil
+		return string.find(string.lower(str), lowerQuery, 1, true) ~= nil
 	end
 
 	local function Search(query)
@@ -381,15 +378,18 @@ function SearchBar.new(TabModule, Parent, OnClose)
 			return {}
 		end
 
+		-- 查询词只转一次小写：原先每个 Tab/元素比对时都重复 string.lower(query)
+		local lowerQuery = string.lower(query)
+
 		local results = {}
 		for tabindex, tab in next, TabModule.Tabs do
-			local tabMatches = ContainsText(tab.Title or "", query)
+			local tabMatches = ContainsText(tab.Title or "", lowerQuery)
 			local elementResults = {}
 
 			for elemindex, elem in next, tab.Elements do
 				if elem.__type ~= "Section" then
-					local titleMatches = ContainsText(elem.Title or "", query)
-					local descMatches = ContainsText(elem.Desc or "", query)
+					local titleMatches = ContainsText(elem.Title or "", lowerQuery)
+					local descMatches = ContainsText(elem.Desc or "", lowerQuery)
 
 					if titleMatches or descMatches then
 						elementResults[elemindex] = {
@@ -416,25 +416,18 @@ function SearchBar.new(TabModule, Parent, OnClose)
 	end
 
 	Creator.AddSignal(ScrollingFrame.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
-		--task.wait()
-		Tween(ScrollingFrame, 0.06, {
-			Size = UDim2.new(
-				1,
+		-- 直接设置尺寸：搜索重建结果时该信号会连续触发 N 次，
+		-- 原先每次都新建 0.06s Tween 会堆积播放造成抖动，直接赋值跟手且零开销
+		ScrollingFrame.Size = UDim2.new(
+			1,
+			0,
+			0,
+			math.clamp(
+				ScrollingFrame.UIListLayout.AbsoluteContentSize.Y + (SearchBarModule.Padding * 2),
 				0,
-				0,
-				math.clamp(
-					ScrollingFrame.UIListLayout.AbsoluteContentSize.Y + (SearchBarModule.Padding * 2),
-					0,
-					SearchBarModule.MaxHeight
-				)
-			),
-		}, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut):Play()
-		-- ScrollingFrame.Size = UDim2.new(
-		--     1,
-		--     0,
-		--     0,
-		--     math.clamp(ScrollingFrame.UIListLayout.AbsoluteContentSize.Y+(SearchBarModule.Padding*2), 0, SearchBarModule.MaxHeight)
-		-- )
+				SearchBarModule.MaxHeight
+			)
+		)
 	end)
 
 	function SearchBarModule:Open()
@@ -529,8 +522,17 @@ function SearchBar.new(TabModule, Parent, OnClose)
 		end
 	end
 
+	-- 输入防抖：每敲一个字符都会全量销毁并重建所有结果 UI，
+	-- 连续输入时只响应最后一次，避免中间过程的 N 次重建
+	local SearchDebounce = 0
 	Creator.AddSignal(TextBox:GetPropertyChangedSignal("Text"), function()
-		SearchBarModule:Search(TextBox.Text)
+		SearchDebounce = SearchDebounce + 1
+		local current = SearchDebounce
+		task.delay(0.12, function()
+			if current == SearchDebounce then
+				SearchBarModule:Search(TextBox.Text)
+			end
+		end)
 	end)
 
 	return SearchBarModule

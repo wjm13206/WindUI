@@ -114,6 +114,18 @@ local luaSet = createKeywordSet(keywords.lua)
 local rbxSet = createKeywordSet(keywords.rbx)
 local operatorsSet = createKeywordSet(keywords.operators)
 
+-- 颜色转 Hex 缓存：高亮时每个 token 都要 ToHex 一次，
+-- 而颜色种类固定只有十几种，缓存后每个颜色只转换一次
+local hexCache = {}
+local function ToHexCached(color)
+	local hex = hexCache[color]
+	if not hex then
+		hex = color:ToHex()
+		hexCache[color] = hex
+	end
+	return hex
+end
+
 local function getHighlight(tokens, index)
 	local token = tokens[index]
 
@@ -161,6 +173,8 @@ function highlighter.run(source, newColors)
 		for name, color in next, newColors do
 			colors[name] = color
 		end
+		-- 自定义颜色会改变 ToHex 结果，清空缓存避免命中旧值
+		table.clear(hexCache)
 	end
 
 	local tokens = {}
@@ -232,7 +246,7 @@ function highlighter.run(source, newColors)
 		if highlight then
 			local syntax = string.format(
 				'<font color = "#%s">%s</font>',
-				highlight:ToHex(),
+				ToHexCached(highlight),
 				token:gsub("<", "&lt;"):gsub(">", "&gt;")
 			)
 

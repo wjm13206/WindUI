@@ -78,13 +78,23 @@ local function createAcrylicBlur(distance)
 		model.Mesh.Scale = Vector3.new(width, height, 0)
 	end
 
+	local renderPending = false
 	local function onChange(rbx)
 		local offset = getOffset()
 		local size = rbx.AbsoluteSize - Vector2.new(offset, offset)
 		local position = rbx.AbsolutePosition + Vector2.new(offset / 2, offset / 2)
 
 		updatePositions(size, position)
-		task.spawn(render)
+		-- 合并高频触发：拖拽/缩放窗口时该回调连续触发，
+		-- 若已有待执行的渲染则跳过（待执行的那次会用最新位置），避免任务堆积
+		if renderPending then
+			return
+		end
+		renderPending = true
+		task.spawn(function()
+			renderPending = false
+			render()
+		end)
 	end
 
 	local function renderOnChange()

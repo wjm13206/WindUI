@@ -257,7 +257,9 @@ function Element:New(Config)
 					Value = math.clamp(Value, Slider.Value.Min or 0, Slider.Value.Max or 100)
 
 					if Value ~= LastValue then
-						Tween(Slider.UIElements.SliderIcon.Frame, 0.05, { Size = UDim2.new(delta, 0, 1, 0) }):Play()
+						-- 拖拽是逐帧高频路径，直接赋值代替每帧新建 Tween
+						--（0.05s 的 Tween 在连续拖动中只会堆积并造成滞后感）
+						Slider.UIElements.SliderIcon.Frame.Size = UDim2.new(delta, 0, 1, 0)
 						Slider.UIElements.SliderContainer.TextBox.Text = FormatValue(Value)
 						if Tooltip then
 							Tooltip.TitleFrame.Text = FormatValue(Value)
@@ -278,7 +280,7 @@ function Element:New(Config)
 						Value = CalculateValue(Slider.Value.Min + delta * (Slider.Value.Max - Slider.Value.Min))
 
 						if Value ~= LastValue then
-							Tween(Slider.UIElements.SliderIcon.Frame, 0.05, { Size = UDim2.new(delta, 0, 1, 0) }):Play()
+							Slider.UIElements.SliderIcon.Frame.Size = UDim2.new(delta, 0, 1, 0)
 							Slider.UIElements.SliderContainer.TextBox.Text = FormatValue(Value)
 							if Tooltip then
 								Tooltip.TitleFrame.Text = FormatValue(Value)
