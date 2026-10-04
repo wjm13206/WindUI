@@ -92,18 +92,21 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 		}),
 	})
 
-	local function RecalculateCanvasSize()
+	local function RecalculateCanvasSize(contentY)
+		-- contentY 可由 RecalculateListSize 一并返回：AbsoluteContentSize 的读取会强制同步布局，
+		-- 两处连调时只读一次
 		Dropdown.UIElements.Menu.Frame.ScrollingFrame.CanvasSize =
-			UDim2.fromOffset(0, Dropdown.UIElements.UIListLayout.AbsoluteContentSize.Y)
+			UDim2.fromOffset(0, contentY or Dropdown.UIElements.UIListLayout.AbsoluteContentSize.Y)
 	end
 
 	local function RecalculateListSize()
 		local MaxHeight = Config.WindUI.DropdownGui.AbsoluteSize.Y
 
-		local ContentY = Dropdown.UIElements.UIListLayout.AbsoluteContentSize.Y / Config.UIScale
+		local ContentY = Dropdown.UIElements.UIListLayout.AbsoluteContentSize.Y
+		local ScaledY = ContentY / Config.UIScale
 		local SearchBarOffset = Dropdown.SearchBarEnabled and (Element.SearchBarHeight + (Element.MenuPadding * 3))
 			or (Element.MenuPadding * 2)
-		local TotalY = ContentY + SearchBarOffset
+		local TotalY = ScaledY + SearchBarOffset
 
 		if TotalY > MaxHeight then
 			Dropdown.UIElements.MenuCanvas.Size =
@@ -112,6 +115,7 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 			Dropdown.UIElements.MenuCanvas.Size =
 				UDim2.fromOffset(Dropdown.UIElements.MenuCanvas.AbsoluteSize.X, TotalY)
 		end
+		return ContentY
 	end
 
 	function UpdatePosition()
@@ -277,8 +281,7 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 					end
 					-- 尺寸重算只需做一次：原先在循环内每个选项都触发一次，
 					-- 每次都会读写 AbsoluteContentSize 并设置 Size，引起 N 次布局抖动
-					RecalculateListSize()
-					RecalculateCanvasSize()
+					RecalculateCanvasSize(RecalculateListSize())
 				end, true)
 				SearchLabel.Size = UDim2.new(1, 0, 0, Element.SearchBarHeight)
 				SearchLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -556,8 +559,7 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 		-- 刷新完成后再统一更新一次显示文字与菜单尺寸：
 		-- 原先每个选项创建后都各触发一次，重建 N 个选项就做 N 次冗余布局计算
 		DropdownModule:Display()
-		RecalculateCanvasSize()
-		RecalculateListSize()
+		RecalculateCanvasSize(RecalculateListSize())
 
 		-- local maxWidth = Dropdown.MenuWidth or 0
 		-- if maxWidth == 0 then
@@ -594,8 +596,7 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 		DropdownModule:Refresh(Dropdown.Values)
 	end
 
-	RecalculateListSize()
-	RecalculateCanvasSize()
+	RecalculateCanvasSize(RecalculateListSize())
 
 	function DropdownModule:Open()
 		if not Dropdown.Locked then

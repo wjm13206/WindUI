@@ -596,11 +596,11 @@ return function(Config)
 				not Element.Color and true or false
 			)
 			if ImageFrame then
-				if typeof(Element.Color) == "string" and not string.find(Element.Image, "rbxthumb") then
-					ImageFrame.ImageLabel.ImageColor3 =
-						GetTextColorForHSB(Color3.fromHex(Creator.Colors[Element.Color]))
-				elseif typeof(Element.Color) == "Color3" and not string.find(Element.Image, "rbxthumb") then
-					ImageFrame.ImageLabel.ImageColor3 = GetTextColorForHSB(Element.Color)
+				-- 复用创建时缓存的文字色：原先每次 SetImage 都重做一次 Hex→Color3→HSB 换算；
+				-- 且原先用已覆写的 Element.Image 做 rbxthumb 判断，改为本次传入的 newImage；
+				-- plain 查找避免模式引擎开销
+				if CachedTextColor and not string.find(newImage, "rbxthumb", 1, true) then
+					ImageFrame.ImageLabel.ImageColor3 = CachedTextColor
 				end
 
 				ImageFrame.Visible = true

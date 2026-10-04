@@ -361,16 +361,38 @@ function SearchBar.new(TabModule, Parent, OnClose)
 		return Tab
 	end
 
-	local function ContainsText(str, lowerQuery)
+	-- 元素标题/描述的小写缓存：用户每多输一个字符就会全量搜索一次，
+	-- 标题原文不变时复用上次的小写结果。key 住元素对象并比对原文，
+	-- SetTitle/SetDesc 改名后自动失效，避免命中 stale
+	local LowerMemo = setmetatable({}, { __mode = "k" })
+	local function LowerCached(owner, field, str)
+		if not str or str == "" then
+			return ""
+		end
+		local slots = LowerMemo[owner]
+		if not slots then
+			slots = {}
+			LowerMemo[owner] = slots
+		end
+		local entry = slots[field]
+		if entry ~= nil and entry.Original == str then
+			return entry.Lower
+		end
+		local lowered = string.lower(str)
+		slots[field] = { Original = str, Lower = lowered }
+		return lowered
+	end
+
+	local function ContainsLowered(lowerStr, lowerQuery)
 		if not lowerQuery or lowerQuery == "" then
 			return false
 		end
 
-		if not str or str == "" then
+		if not lowerStr or lowerStr == "" then
 			return false
 		end
 
-		return string.find(string.lower(str), lowerQuery, 1, true) ~= nil
+		return string.find(lowerStr, lowerQuery, 1, true) ~= nil
 	end
 
 	local function Search(query)
@@ -383,13 +405,13 @@ function SearchBar.new(TabModule, Parent, OnClose)
 
 		local results = {}
 		for tabindex, tab in next, TabModule.Tabs do
-			local tabMatches = ContainsText(tab.Title or "", lowerQuery)
+			local tabMatches = ContainsLowered(LowerCached(tab, "t", tab.Title or ""), lowerQuery)
 			local elementResults = {}
 
 			for elemindex, elem in next, tab.Elements do
 				if elem.__type ~= "Section" then
-					local titleMatches = ContainsText(elem.Title or "", lowerQuery)
-					local descMatches = ContainsText(elem.Desc or "", lowerQuery)
+					local titleMatches = ContainsLowered(LowerCached(elem, "t", elem.Title or ""), lowerQuery)
+					local descMatches = ContainsLowered(LowerCached(elem, "d", elem.Desc or ""), lowerQuery)
 
 					if titleMatches or descMatches then
 						elementResults[elemindex] = {

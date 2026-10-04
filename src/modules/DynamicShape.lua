@@ -108,6 +108,19 @@ function DynamicShapeModule:Init(CreatorObj)
 	return self.New
 end
 
+-- 模块级共享：原先每个 New() 调用都重建一次该表与闭包，
+-- 每个 Element 创建 4~6 个形状，N 个元素即 N 次重复分配
+local ShapeFallbacks = {
+	["Glass-0.7"] = "SquircleGlass",
+	["Glass-1"] = "SquircleGlass",
+	["Glass-1.4"] = "SquircleGlass",
+	["Squircle-Outline"] = "SquircleOutline",
+}
+
+local function GetShape(Type)
+	return DynamicShapeModule.Shapes[ShapeFallbacks[Type] or Type] or DynamicShapeModule.Shapes.Circle
+end
+
 function DynamicShapeModule:New(Radius, Type, Properties, Children, IsButton, IsSlice)
 	local Wrapper = {
 		Radius = Radius or 0,
@@ -117,17 +130,6 @@ function DynamicShapeModule:New(Radius, Type, Properties, Children, IsButton, Is
 		SetRadius = nil,
 		SetType = nil,
 	}
-
-	local ShapeFallbacks = {
-		["Glass-0.7"] = "SquircleGlass",
-		["Glass-1"] = "SquircleGlass",
-		["Glass-1.4"] = "SquircleGlass",
-		["Squircle-Outline"] = "SquircleOutline",
-	}
-
-	local function GetShape(Type)
-		return DynamicShapeModule.Shapes[ShapeFallbacks[Type] or Type] or DynamicShapeModule.Shapes.Circle
-	end
 
 	local ImageLabel = Creator.New(IsButton and "ImageButton" or "ImageLabel", {
 		Image = "",
@@ -139,7 +141,8 @@ function DynamicShapeModule:New(Radius, Type, Properties, Children, IsButton, Is
 	}, Children)
 
 	for Property, Value in next, Properties do
-		if not table.find({ "ThemeTag" }, Property) then
+		-- 直接判等：原先每个属性都新建 {"ThemeTag"} 数组再 table.find，N 属性即 N 次分配
+		if Property ~= "ThemeTag" then
 			ImageLabel[Property] = Value
 		end
 	end
@@ -209,7 +212,8 @@ function DynamicShapeModule:New(Radius, Type, Properties, Children, IsButton, Is
 		local Shape = GetShape(NewType)
 		ImageLabel.Image = Shape.Image
 		ImageLabel.SliceCenter = Shape.Rect
-		Wrapper:SetRadius(Wrapper.Radius)
+		-- 复用已查到的 Shape 半径：与 SetRadius 等价，省一次 GetShape 查找
+		ImageLabel.SliceScale = math.max(Wrapper.Radius / Shape.Radius, 0.0001)
 		-- 类型切换后若需要自适应才建立尺寸监听（延迟建立，避免无用连接）
 		if Shape.AutoChange ~= false then
 			EnsureSizeWatcher()

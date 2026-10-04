@@ -168,6 +168,8 @@ return function(Config)
 			ImageTransparency = 1, -- .8; .35
 		}),
 	})
+	-- 同一图标解析一次：原先三次调用 Creator.Icon("expand")
+	local ExpandIcon = Creator.Icon("expand")
 	local FullScreenIcon = Creator.NewRoundFrame(Window.UICorner, "Squircle", {
 		Size = UDim2.new(1, 0, 1, 0),
 		ImageTransparency = 1, -- .65
@@ -177,9 +179,9 @@ return function(Config)
 	}, {
 		New("ImageLabel", {
 			Size = UDim2.new(0, 70, 0, 70),
-			Image = Creator.Icon("expand")[1],
-			ImageRectOffset = Creator.Icon("expand")[2].ImageRectPosition,
-			ImageRectSize = Creator.Icon("expand")[2].ImageRectSize,
+			Image = ExpandIcon[1],
+			ImageRectOffset = ExpandIcon[2].ImageRectPosition,
+			ImageRectSize = ExpandIcon[2].ImageRectSize,
 			BackgroundTransparency = 1,
 			Position = UDim2.new(0.5, 0, 0.5, 0),
 			AnchorPoint = Vector2.new(0.5, 0.5),
@@ -388,7 +390,9 @@ return function(Config)
 				Name = "UserIcon",
 			}, {
 				New("ImageLabel", {
-					Image = GetUserThumb(),
+					-- 初始留空并异步加载：GetUserThumbnailAsync 会 yield 等待网络，
+					-- 原先同步调用会阻塞整个窗口创建
+					Image = "",
 					BackgroundTransparency = 1,
 					Size = UDim2.new(0, 42, 0, 42),
 					ThemeTag = {
@@ -501,6 +505,16 @@ return function(Config)
 				Tween(UserIcon.Outline, 0.04, { ImageTransparency = 1 }):Play()
 			end)
 		end
+
+		-- 头像异步回填：窗口先显示出来，头像到了再补上
+		task.spawn(function()
+			local ok, thumb = pcall(GetUserThumb)
+			if ok and thumb then
+				pcall(function()
+					UserIcon.UserIcon.ImageLabel.Image = thumb
+				end)
+			end
+		end)
 	end
 
 	local Outline1
@@ -541,43 +555,15 @@ return function(Config)
 	if typeof(Window.Background) == "string" and BGVideo then
 		IsVideoBG = true
 
-		if string.find(BGVideo, "http") then
-			local videoPath = (Window.Folder or "Temp") .. "/assets/." .. Creator.SanitizeFilename(BGVideo) .. ".webm"
-			if not isfile(videoPath) then
-				local success, result = pcall(function()
-					-- local response = Creator.Request({
-					-- 	Url = BGVideo,
-					-- 	Method = "GET",
-					-- 	Headers = { ["User-Agent"] = "Roblox/Exploit" },
-					-- })
-					local response = game.HttpGet and game:HttpGet(BGVideo)
-						or Creator.Request({
-							Url = BGVideo,
-							Method = "GET",
-							Headers = { ["User-Agent"] = "Roblox/Exploit" },
-						}).Body
-					--print(response)
-					writefile(videoPath, response)
-				end)
-				if not success then
-					warn("[ WindUI.Window.Background ] Failed to download video: " .. tostring(result))
-				end
-			end
-
-			local success, customAsset = pcall(function()
-				return getcustomasset(videoPath)
-			end)
-			if not success then
-				warn("[ WindUI.Window.Background ] Failed to load custom asset: " .. tostring(customAsset))
-			end
-			warn("[ WindUI.Window.Background ] VideoFrame may not work with custom video")
-			BGVideo = customAsset
-		end
+		-- 仅 http 外链需要下载：原先同步 HttpGet 会阻塞窗口创建直到下载完成，
+		-- 改为先放占位、异步下载完成后回填
+		local needDownload = string.find(BGVideo, "http", 1, true) ~= nil
+		local videoSource = BGVideo
 
 		BGImage = New("VideoFrame", {
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, 0, 1, 0),
-			Video = BGVideo,
+			Video = needDownload and "" or videoSource,
 			Looped = true,
 			Volume = 0,
 		}, {
@@ -585,42 +571,51 @@ return function(Config)
 				CornerRadius = UDim.new(0, Window.UICorner),
 			}),
 		})
-		BGImage:Play()
+
+		if needDownload then
+			task.spawn(function()
+				local videoPath = (Window.Folder or "Temp") .. "/assets/." .. Creator.SanitizeFilename(videoSource) .. ".webm"
+				if not isfile(videoPath) then
+					local success, result = pcall(function()
+						local response = game.HttpGet and game:HttpGet(videoSource)
+							or Creator.Request({
+								Url = videoSource,
+								Method = "GET",
+								Headers = { ["User-Agent"] = "Roblox/Exploit" },
+							}).Body
+						writefile(videoPath, response)
+					end)
+					if not success then
+						warn("[ WindUI.Window.Background ] Failed to download video: " .. tostring(result))
+					end
+				end
+
+				local success, customAsset = pcall(function()
+					return getcustomasset(videoPath)
+				end)
+				if not success then
+					warn("[ WindUI.Window.Background ] Failed to load custom asset: " .. tostring(customAsset))
+				end
+				warn("[ WindUI.Window.Background ] VideoFrame may not work with custom video")
+				pcall(function()
+					BGImage.Video = success and customAsset or ""
+					BGImage:Play()
+				end)
+			end)
+		else
+			BGImage:Play()
+		end
 	elseif BGHttpImage then
 		local imagePath = (Window.Folder or "Temp")
 			.. "/assets/."
 			.. Creator.SanitizeFilename(BGHttpImage)
 			.. GetImageExtension(BGHttpImage)
 
-		if isfile and not isfile(imagePath) then
-			local success, result = pcall(function()
-				local response = game.HttpGet and game:HttpGet(BGHttpImage)
-					or Creator.Request({
-						Url = BGHttpImage,
-						Method = "GET",
-						Headers = { ["User-Agent"] = "Roblox/Exploit" },
-					}).Body
-
-				writefile(imagePath, response)
-			end)
-
-			if not success then
-				warn("[ Window.Background ] Failed to download image: " .. tostring(result))
-			end
-		end
-
-		local success, customAsset = pcall(function()
-			return getcustomasset(imagePath)
-		end)
-
-		if not success then
-			warn("[ Window.Background ] Failed to load custom asset: " .. tostring(customAsset))
-		end
-
+		-- 占位先行：原先同步下载图片会阻塞窗口创建，异步完成后回填
 		BGImage = New("ImageLabel", {
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, 0, 1, 0),
-			Image = customAsset,
+			Image = "",
 			ImageTransparency = 0,
 			ScaleType = "Crop",
 		}, {
@@ -628,6 +623,37 @@ return function(Config)
 				CornerRadius = UDim.new(0, Window.UICorner),
 			}),
 		})
+
+		task.spawn(function()
+			if isfile and not isfile(imagePath) then
+				local success, result = pcall(function()
+					local response = game.HttpGet and game:HttpGet(BGHttpImage)
+						or Creator.Request({
+							Url = BGHttpImage,
+							Method = "GET",
+							Headers = { ["User-Agent"] = "Roblox/Exploit" },
+						}).Body
+
+					writefile(imagePath, response)
+				end)
+
+				if not success then
+					warn("[ Window.Background ] Failed to download image: " .. tostring(result))
+				end
+			end
+
+			local success, customAsset = pcall(function()
+				return getcustomasset(imagePath)
+			end)
+
+			if not success then
+				warn("[ Window.Background ] Failed to load custom asset: " .. tostring(customAsset))
+			else
+				pcall(function()
+					BGImage.Image = customAsset
+				end)
+			end
+		end)
 	elseif BGRobloxImage then
 		BGImage = New("ImageLabel", {
 			BackgroundTransparency = 1,
@@ -1195,8 +1221,6 @@ return function(Config)
 
 	local CurrentPos
 	local CurrentSize
-	local iconCopy = Creator.Icon("minimize")
-	local iconSquare = Creator.Icon("maximize")
 
 	local FullscreenButton = Window:CreateTopbarButton(
 		"Fullscreen",

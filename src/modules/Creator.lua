@@ -36,6 +36,12 @@ local ThemeCallbackId = 0
 -- 已下载网络图片的内存缓存：asset 字符串或 false（加载失败），避免同一 URL 重复请求/写文件
 local ImageAssetCache = {}
 
+-- 主题属性全局缓存：同一主题下相同 ColorKey 的解析结果只计算一次。
+-- 主题表只在 SetTheme 整表替换（运行时无逐字段修改），切换时清空即安全。
+-- 命中 Hover/Select 等高频单对象 UpdateTheme 路径（per-call 缓存对此无效）。
+local ThemePropCache = {}
+local ThemePropCacheTheme = nil
+
 local Creator
 Creator = {
 	Font = "rbxassetid://12187365364",
@@ -233,6 +239,9 @@ end
 function Creator.SetTheme(Theme)
 	local PreviousTheme = Creator.Theme
 	Creator.Theme = Theme
+	-- 主题整体替换，旧解析结果全部失效
+	table.clear(ThemePropCache)
+	ThemePropCacheTheme = Theme
 	Creator.UpdateTheme(nil, false)
 
 	for _, Callback in next, Creator.ThemeChangeCallbacks do
@@ -255,6 +264,21 @@ function Creator.UpdateFont(FontId)
 end
 
 function Creator.GetThemeProperty(Property, Theme)
+	-- 全局缓存：同一主题下相同 ColorKey 只解析一次。
+	-- Hover/Select 等高频路径每次只更新单个对象，per-call 缓存无效，这里是主要命中点
+	local useCache = (Theme == Creator.Theme)
+	if useCache then
+		if ThemePropCacheTheme ~= Theme then
+			-- 防御性失效：主题引用被外部替换但未走 SetTheme 时清空
+			table.clear(ThemePropCache)
+			ThemePropCacheTheme = Theme
+		end
+		local cached = ThemePropCache[Property]
+		if cached ~= nil then
+			return (cached == false) and nil or cached
+		end
+	end
+
 	local function getValue(prop, themeTable)
 		local value = themeTable[prop]
 
@@ -262,71 +286,81 @@ function Creator.GetThemeProperty(Property, Theme)
 			return nil
 		end
 
-		if typeof(value) == "string" and string.sub(value, 1, 1) == "#" then
+		-- typeof 只调一次；string.byte 取首字符对比，避免 string.sub 每次分配新字符串
+		local valueType = typeof(value)
+		if valueType == "string" and string.byte(value, 1) == 35 then -- "#"
 			return HexToColor3(value)
 		end
 
-		if typeof(value) == "Color3" then
+		if valueType == "Color3" then
 			return value
 		end
 
-		if typeof(value) == "number" then
+		if valueType == "number" then
 			return value
 		end
 
-		if typeof(value) == "table" and value.Color and value.Transparency then
+		if valueType == "table" and value.Color and value.Transparency then
 			return value
 		end
 
-		if typeof(value) == "function" then
+		if valueType == "function" then
 			return value(themeTable)
 		end
 
 		return value
 	end
 
+	local function StoreCache(value)
+		if useCache then
+			-- false 哨兵缓存 nil，避免对缺失 key 重复递归查找
+			ThemePropCache[Property] = (value == nil) and false or value
+		end
+		return value
+	end
+
 	local value = getValue(Property, Theme)
 	if value ~= nil then
-		if typeof(value) == "string" and string.sub(value, 1, 1) ~= "#" then
+		if typeof(value) == "string" and string.byte(value, 1) ~= 35 then -- "#"
 			local referencedValue = Creator.GetThemeProperty(value, Theme)
 			if referencedValue ~= nil then
-				return referencedValue
+				return StoreCache(referencedValue)
 			end
 		else
-			return value
+			return StoreCache(value)
 		end
 	end
 
 	local fallbackProperty = Creator.ThemeFallbacks[Property]
 	if fallbackProperty ~= nil then
-		if typeof(fallbackProperty) == "string" and string.sub(fallbackProperty, 1, 1) ~= "#" then
-			return Creator.GetThemeProperty(fallbackProperty, Theme)
+		if typeof(fallbackProperty) == "string" and string.byte(fallbackProperty, 1) ~= 35 then
+			return StoreCache(Creator.GetThemeProperty(fallbackProperty, Theme))
 		else
-			return getValue(Property, { [Property] = fallbackProperty })
+			return StoreCache(getValue(Property, { [Property] = fallbackProperty }))
 		end
 	end
 
 	value = getValue(Property, Creator.Themes["Dark"])
 	if value ~= nil then
-		if typeof(value) == "string" and string.sub(value, 1, 1) ~= "#" then
+		if typeof(value) == "string" and string.byte(value, 1) ~= 35 then
 			local referencedValue = Creator.GetThemeProperty(value, Creator.Themes["Dark"])
 			if referencedValue ~= nil then
-				return referencedValue
+				return StoreCache(referencedValue)
 			end
 		else
-			return value
+			return StoreCache(value)
 		end
 	end
 
 	if fallbackProperty ~= nil then
-		if typeof(fallbackProperty) == "string" and string.sub(fallbackProperty, 1, 1) ~= "#" then
-			return Creator.GetThemeProperty(fallbackProperty, Creator.Themes["Dark"])
+		if typeof(fallbackProperty) == "string" and string.byte(fallbackProperty, 1) ~= 35 then
+			return StoreCache(Creator.GetThemeProperty(fallbackProperty, Creator.Themes["Dark"]))
 		else
-			return getValue(Property, { [Property] = fallbackProperty })
+			return StoreCache(getValue(Property, { [Property] = fallbackProperty }))
 		end
 	end
 
-	return nil
+	return StoreCache(nil)
 end
 
 function Creator.AddThemeObject(Object, Properties, skipUpdate)
@@ -451,7 +485,9 @@ function Creator.UpdateTheme(TargetObject, isTween, isTweenTarget, Duration, Eas
 end
 
 function Creator.SetThemeTag(Object, ThemeTag, Duration, EasingStyle, EasingDirection)
-	Creator.AddThemeObject(Object, ThemeTag)
+	-- AddThemeObject 自带一次即时 UpdateTheme，这里只需要 Tween 版；
+	-- 传 skipUpdate 跳过重复解析，原先每次 Hover 都做两次全量主题解析
+	Creator.AddThemeObject(Object, ThemeTag, true)
 	Creator.UpdateTheme(Object, false, true, Duration, EasingStyle, EasingDirection)
 end
 
@@ -537,15 +573,34 @@ end
 function Creator.New(Name, Properties, Children)
 	local Object = Instance.new(Name)
 
-	for Name, Value in next, Creator.DefaultProperties[Name] or {} do
-		Object[Name] = Value
+	-- 默认值中被本次 Properties 覆盖的不再重复设置（原先先设默认值又覆盖一次）
+	local defaultProps = Creator.DefaultProperties[Name]
+	if defaultProps then
+		if Properties then
+			for PropName, Value in next, defaultProps do
+				if Properties[PropName] == nil and PropName ~= "Parent" then
+					Object[PropName] = Value
+				end
+			end
+		else
+			for PropName, Value in next, defaultProps do
+				if PropName ~= "Parent" then
+					Object[PropName] = Value
+				end
+			end
+		end
 	end
 
-	for Name, Value in next, Properties or {} do
-		if Name ~= "ThemeTag" then
-			Object[Name] = Value
+	-- Parent 留到最后挂载：中途每次设置 Parent/逐个添加子节点都会触发一次
+	-- 布局与样式重算，子树拼完再一次性挂载只触发一次
+	local NewParent
+	for PropName, Value in next, Properties or {} do
+		if PropName == "Parent" then
+			NewParent = Value
+		elseif PropName ~= "ThemeTag" then
+			Object[PropName] = Value
 		end
-		if Creator.Localization and Creator.Localization.Enabled and Name == "Text" then
+		if Creator.Localization and Creator.Localization.Enabled and PropName == "Text" then
 			local TranslationId = string.match(Value, "^" .. Creator.Localization.Prefix .. "(.+)")
 			if TranslationId then
 				local currentId = #Creator.LocalizationObjects + 1
@@ -565,6 +620,9 @@ function Creator.New(Name, Properties, Children)
 	end
 	if Properties and Properties.FontFace then
 		Creator.AddFontObject(Object)
+	end
+	if NewParent ~= nil then
+		Object.Parent = NewParent
 	end
 	return Object
 end

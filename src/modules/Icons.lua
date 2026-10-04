@@ -4,7 +4,8 @@ local IconModule = cloneref(game:GetService("ReplicatedStorage"):WaitForChild("G
 
 local function parseIconString(iconString)  
     if type(iconString) == "string" then  
-        local splitIndex = iconString:find(":")  
+        -- plain 查找：图标名不含模式字符，走模式引擎是纯浪费
+        local splitIndex = iconString:find(":", 1, true)  
         if splitIndex then  
             local iconType = iconString:sub(1, splitIndex - 1)  
             local iconName = iconString:sub(splitIndex + 1)  
@@ -12,7 +13,11 @@ local function parseIconString(iconString)
         end  
     end  
     return nil, iconString  
-end  
+end
+
+-- 解析结果缓存：同一图标（如 "expand"/"x"/"lock"）在创建窗口时被解析几十次，
+-- 图标集静态不变，首次解析后直接复用，避免重复 find/sub/表查找与结果表分配
+local IconResolveCache = {}  
 
 function IconModule.AddIcons(packName, iconsData)
     if type(packName) ~= "string" or type(iconsData) ~= "table" then
@@ -27,6 +32,8 @@ function IconModule.AddIcons(packName, iconsData)
         }
     end
     
+    -- AddIcons 会改变解析结果，先清空缓存避免命中旧值
+    table.clear(IconResolveCache)
     for iconName, iconValue in pairs(iconsData) do
         if type(iconValue) == "number" or (type(iconValue) == "string" and iconValue:match("^rbxassetid://")) then
             local imageId = iconValue
@@ -83,6 +90,15 @@ end
 
 function IconModule.Icon(Icon, Type, DefaultFormat)
     DefaultFormat = DefaultFormat ~= false
+    -- 结果缓存命中则直接返回：调用方只读 [1]/[2]，复用同一张表安全
+    local cacheKey = typeof(Icon) == "string" and (Icon .. "\0" .. tostring(Type) .. "\0" .. (DefaultFormat and "1" or "0")) or nil
+    if cacheKey ~= nil then
+        local hit = IconResolveCache[cacheKey]
+        if hit ~= nil then
+            return hit
+        end
+    end
+
     local iconType, iconName = parseIconString(Icon)  
     
     local targetType = iconType or Type or IconModule.IconsType  
@@ -90,18 +106,22 @@ function IconModule.Icon(Icon, Type, DefaultFormat)
       
     local iconSet = IconModule.Icons[targetType]  
       
+    local result
     if iconSet and iconSet.Icons and iconSet.Icons[targetName] then  
-        return {   
+        result = {   
             iconSet.Spritesheets[tostring(iconSet.Icons[targetName].Image)],   
             iconSet.Icons[targetName],  
         }  
-    elseif iconSet and iconSet[targetName] and string.find(iconSet[targetName], "rbxassetid://") then
-        return DefaultFormat and { 
+    elseif iconSet and iconSet[targetName] and string.find(iconSet[targetName], "rbxassetid://", 1, true) then
+        result = DefaultFormat and { 
             iconSet[targetName], 
             { ImageRectSize = Vector2.new(0,0), ImageRectPosition = Vector2.new(0,0) }
         } or iconSet[targetName]
-    end  
-    return nil  
+    end
+    if cacheKey ~= nil and result ~= nil then
+        IconResolveCache[cacheKey] = result
+    end
+    return result
 end  
 
 function IconModule.GetIcon(Icon, Type)  

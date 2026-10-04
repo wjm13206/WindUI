@@ -114,10 +114,12 @@ function NotificationModule.New(Config)
 
 	local CloseButton
 	if Notification.CanClose then
+		-- 同一图标解析一次：原先三次调用 Creator.Icon("x")
+		local CloseIcon = Creator.Icon("x")
 		CloseButton = New("ImageButton", {
-			Image = Creator.Icon("x")[1],
-			ImageRectSize = Creator.Icon("x")[2].ImageRectSize,
-			ImageRectOffset = Creator.Icon("x")[2].ImageRectPosition,
+			Image = CloseIcon[1],
+			ImageRectSize = CloseIcon[2].ImageRectSize,
+			ImageRectOffset = CloseIcon[2].ImageRectPosition,
 			BackgroundTransparency = 1,
 			Size = UDim2.new(0, 16, 0, 16),
 			Position = UDim2.new(1, -NotificationModule.UIPadding, 0, NotificationModule.UIPadding),

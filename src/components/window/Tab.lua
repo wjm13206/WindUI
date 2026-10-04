@@ -239,10 +239,14 @@ function TabModule.New(Config, UIScale)
 			Tab.UIElements.Main.Frame.TextLabel.Size = UDim2.new(1, TextOffset, 0, 0)
 		end
 
-		Icon2 =
-			Creator.Image(Tab.Icon, Tab.Icon .. ":" .. Tab.Title, 0, Window.Folder, Tab.__type, true, Tab.IconThemed)
-		Icon2.Size = UDim2.new(0, 16, 0, 16)
-		Icon2.ImageLabel.ImageTransparency = not Tab.Locked and 0 or 0.7
+		-- Icon2 只用于顶部 TabTitle 展示区（无 ShowTabTitle 时该区域永久隐藏）：
+		-- 原先每个有图标的 Tab 都创建两份图标实例，第二份多数情况下从不挂载
+		if Tab.ShowTabTitle then
+			Icon2 =
+				Creator.Image(Tab.Icon, Tab.Icon .. ":" .. Tab.Title, 0, Window.Folder, Tab.__type, true, Tab.IconThemed)
+			Icon2.Size = UDim2.new(0, 16, 0, 16)
+			Icon2.ImageLabel.ImageTransparency = not Tab.Locked and 0 or 0.7
+		end
 		TextOffset = -30
 
 		--Icon2.Parent = Tab.UIElements.Main.Frame
@@ -466,15 +470,17 @@ function TabModule.New(Config, UIScale)
 
 	function Tab:LockAll()
 		--print("LockAll called, number of elements: " .. #self.Elements)
-		for _, element in next, Window.AllElements do
-			if element.Tab and element.Tab.Index and element.Tab.Index == Tab.Index and element.Lock then
+		-- 只遍历本 Tab 元素：原先全量扫描 Window.AllElements（O(全窗口元素)），
+		-- 且 AllElements 以 Tab 内下标为 key，本就不可靠
+		for _, element in next, Tab.Elements do
+			if element.Lock then
 				element:Lock()
 			end
 		end
 	end
 	function Tab:UnlockAll()
-		for _, element in next, Window.AllElements do
-			if element.Tab and element.Tab.Index and element.Tab.Index == Tab.Index and element.Unlock then
+		for _, element in next, Tab.Elements do
+			if element.Unlock then
 				element:Unlock()
 			end
 		end
@@ -482,8 +488,8 @@ function TabModule.New(Config, UIScale)
 	function Tab:GetLocked()
 		local LockedElements = {}
 
-		for _, element in next, Window.AllElements do
-			if element.Tab and element.Tab.Index and element.Tab.Index == Tab.Index and element.Locked == true then
+		for _, element in next, Tab.Elements do
+			if element.Locked == true then
 				table.insert(LockedElements, element)
 			end
 		end
@@ -493,8 +499,8 @@ function TabModule.New(Config, UIScale)
 	function Tab:GetUnlocked()
 		local UnlockedElements = {}
 
-		for _, element in next, Window.AllElements do
-			if element.Tab and element.Tab.Index and element.Tab.Index == Tab.Index and element.Locked == false then
+		for _, element in next, Tab.Elements do
+			if element.Locked == false then
 				table.insert(UnlockedElements, element)
 			end
 		end
@@ -569,8 +575,9 @@ function TabModule.New(Config, UIScale)
 
 		local CreationConn
 		CreationConn = Creator.AddSignal(Tab.UIElements.ContainerFrame.ChildAdded, function()
-			Empty.Visible = false
+			-- 有内容后直接销毁占位页：Visible=false 仍会保留实例与图片内存
 			CreationConn:Disconnect()
+			Empty:Destroy()
 		end)
 	end)
 
@@ -584,6 +591,12 @@ end
 function TabModule:SelectTab(TabIndex)
 	if not TabModule.Tabs[TabIndex].Locked then
 		local prevIndex = TabModule.SelectedTab
+		-- 重选当前 Tab 直接返回：原先会重跑全部容器隐藏/显示与 Tween，
+		-- 误触 Tab 按钮一次即产生 N 个容器的属性写入与一次动画
+		if prevIndex == TabIndex then
+			TabModule.OnChangeFunc(TabIndex)
+			return
+		end
 		TabModule.SelectedTab = TabIndex
 
 		-- 只更新旧选中与新选中两项的样式：

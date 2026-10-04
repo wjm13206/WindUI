@@ -533,22 +533,28 @@ function Element:Colorpicker(Config, Window, WindUI, OnApply)
 			Hue, Sat, Vib = Colorpicker.Hue, Colorpicker.Sat, Colorpicker.Vib
 		end
 
-		Colorpicker.UIElements.SatVibMap.BackgroundColor3 = Color3.fromHSV(Hue, 1, 1)
+		-- 单次换算复用：原先每次 Update 做约 8 次 fromHSV/toHSV，
+		-- 拖拽调色时每鼠标移动事件触发一次，这里是最高频路径
+		local Current = Color3.fromHSV(Hue, Sat, Vib)
+		local HueOnly = Color3.fromHSV(Hue, 1, 1)
+		local RGB = ToRGB(Current)
+
+		Colorpicker.UIElements.SatVibMap.BackgroundColor3 = HueOnly
 		SatCursor.Position = UDim2.new(Sat, 0, 1 - Vib, 0)
-		SatCursor.BackgroundColor3 = Color3.fromHSV(Hue, Sat, Vib)
-		NewDisplayFrame.BackgroundColor3 = Color3.fromHSV(Hue, Sat, Vib)
-		HueDrag.BackgroundColor3 = Color3.fromHSV(Hue, 1, 1)
+		SatCursor.BackgroundColor3 = Current
+		NewDisplayFrame.BackgroundColor3 = Current
+		HueDrag.BackgroundColor3 = HueOnly
 		HueDrag.Position = UDim2.new(0.5, 0, Hue, 0)
 
-		HexInput.Frame.Frame.TextBox.Text = "#" .. Color3.fromHSV(Hue, Sat, Vib):ToHex()
-		RedInput.Frame.Frame.TextBox.Text = ToRGB(Color3.fromHSV(Hue, Sat, Vib))["R"]
-		GreenInput.Frame.Frame.TextBox.Text = ToRGB(Color3.fromHSV(Hue, Sat, Vib))["G"]
-		BlueInput.Frame.Frame.TextBox.Text = ToRGB(Color3.fromHSV(Hue, Sat, Vib))["B"]
+		HexInput.Frame.Frame.TextBox.Text = "#" .. Current:ToHex()
+		RedInput.Frame.Frame.TextBox.Text = RGB.R
+		GreenInput.Frame.Frame.TextBox.Text = RGB.G
+		BlueInput.Frame.Frame.TextBox.Text = RGB.B
 
 		if transparency or IsTransparency then
 			NewDisplayFrame.BackgroundTransparency = Colorpicker.Transparency or transparency
-			TransparencyColor.BackgroundColor3 = Color3.fromHSV(Hue, Sat, Vib)
-			TransparencyDrag.BackgroundColor3 = Color3.fromHSV(Hue, Sat, Vib)
+			TransparencyColor.BackgroundColor3 = Current
+			TransparencyDrag.BackgroundColor3 = Current
 			TransparencyDrag.BackgroundTransparency = Colorpicker.Transparency or transparency
 			TransparencyDrag.Position = UDim2.new(0.5, 0, 1 - Colorpicker.Transparency or transparency, 0)
 			AlphaInput.Frame.Frame.TextBox.Text = Colorpicker:Round(

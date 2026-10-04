@@ -139,11 +139,9 @@ return function(distance)
 		onChange(comp)
 	end)
 
-	Blur.AddParent = function(Parent)
-		Creator.AddSignal(Parent:GetPropertyChangedSignal("Visible"), function()
-			--Blur.SetVisibility(Parent.Visible)
-		end)
-	end
+	-- 空实现：Visible 联动回调已被注释，保留签名供调用方兼容，
+	-- 不再注册无作用的永久信号连接
+	Blur.AddParent = function(_) end
 
 	Blur.SetVisibility = function(Value)
 		model.Transparency = Value and 0.98 or 1
