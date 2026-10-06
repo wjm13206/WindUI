@@ -14,8 +14,6 @@ local WindUI = {
 	ConfigManager = nil,
 	Version = "0.0.0",
 
-	Services = require("./utils/services/Init"),
-
 	OnThemeChangeFunction = nil,
 
 	cloneref = nil,
@@ -81,14 +79,11 @@ if Package then
 	WindUI.Version = Package.version
 end
 
-local KeySystem = require("./components/KeySystem")
-
 local Creator = WindUI.Creator
 
 local New = Creator.New
 
 --local Tween = Creator.Tween
---local ServicesModule = WindUI.Services
 
 local Acrylic = require("./utils/Acrylic/Init")
 
@@ -119,9 +114,6 @@ WindUI.ScreenGui = New("ScreenGui", {
 	-- New("Folder", {
 	--     Name = "Dropdowns"
 	-- }),
-	New("Folder", {
-		Name = "KeySystem",
-	}),
 	New("Folder", {
 		Name = "Popups",
 	}),
@@ -325,92 +317,10 @@ function WindUI:CreateWindow(Config)
 		return
 	end
 
-	local CanLoadWindow = true
-
 	local Theme = WindUI.Themes[Config.Theme or "Dark"]
 
 	--WindUI.Theme = Theme
 	Creator.SetTheme(Theme)
-
-	local hwid = gethwid or function()
-		return Players.LocalPlayer.UserId
-	end
-
-	local Filename = hwid()
-
-	if Config.KeySystem then
-		CanLoadWindow = false
-
-		local function loadKeysystem()
-			KeySystem.new(Config, Filename, function(c)
-				CanLoadWindow = c
-			end)
-		end
-
-		local keyPath = (Config.Folder or "Temp") .. "/" .. Filename .. ".key"
-
-		if Config.KeySystem.KeyValidator then
-			if Config.KeySystem.SaveKey and isfile(keyPath) then
-				local savedKey = readfile(keyPath)
-				local isValid = Config.KeySystem.KeyValidator(savedKey)
-
-				if isValid then
-					CanLoadWindow = true
-				else
-					loadKeysystem()
-				end
-			else
-				loadKeysystem()
-			end
-		elseif not Config.KeySystem.API then
-			if Config.KeySystem.SaveKey and isfile(keyPath) then
-				local savedKey = readfile(keyPath)
-				local isKey = (type(Config.KeySystem.Key) == "table") and table.find(Config.KeySystem.Key, savedKey)
-					or tostring(Config.KeySystem.Key) == tostring(savedKey)
-
-				if isKey then
-					CanLoadWindow = true
-				else
-					loadKeysystem()
-				end
-			else
-				loadKeysystem()
-			end
-		else
-			if isfile(keyPath) then
-				local fileKey = readfile(keyPath)
-				local isSuccess = false
-
-				for _, i in next, Config.KeySystem.API do
-					local serviceData = WindUI.Services[i.Type]
-					if serviceData then
-						local args = {}
-						for _, argName in next, serviceData.Args do
-							table.insert(args, i[argName])
-						end
-
-						local service = serviceData.New(table.unpack(args))
-						local success = service.Verify(fileKey)
-						if success then
-							isSuccess = true
-							break
-						end
-					end
-				end
-
-				CanLoadWindow = isSuccess
-				if not isSuccess then
-					loadKeysystem()
-				end
-			else
-				loadKeysystem()
-			end
-		end
-
-		repeat
-			task.wait()
-		until CanLoadWindow
-	end
 
 	local Window = CreateWindow(Config)
 
