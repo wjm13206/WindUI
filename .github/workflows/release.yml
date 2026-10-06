@@ -24,11 +24,8 @@ jobs:
             - name: Install dependencies
               run: npm install
 
-            - name: Setup Aftman
-              uses: ok-nick/setup-aftman@v0.3.0
-
-            - name: Install Aftman tools
-              run: aftman install
+            - name: Setup Rokit
+              uses: CompeyDev/setup-rokit@v0.2.1
 
             - name: Build
               run: npm run build
