@@ -12,6 +12,8 @@ local New = Creator.New
 
 local CreateToolTip = require("../ui/Tooltip").New
 local CreateScrollSlider = require("../ui/ScrollSlider").New
+local Page = require("./Page")
+local Navigator = require("./Navigator")
 
 local Window, WindUI, UIScale
 
@@ -254,29 +256,11 @@ function TabModule.New(Config, UIScale)
 		--Tab.UIElements.Icon = Icon
 	end
 
-	Tab.UIElements.ContainerFrame = New("ScrollingFrame", {
+	-- 根页面走 Page 工厂：与 Folder 子页面同一种 ScrollingFrame
+	Tab.UIElements.ContainerFrame = Page.New({
+		Window = Window,
+		Gap = Tab.Gap,
 		Size = UDim2.new(1, 0, 1, Tab.ShowTabTitle and -((Window.UIPadding * 2.4) + 12) or 0),
-		BackgroundTransparency = 1,
-		ScrollBarThickness = 0,
-		ElasticBehavior = "Never",
-		CanvasSize = UDim2.new(0, 0, 0, 0),
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 0, 1, 0),
-		AutomaticCanvasSize = "Y",
-		--Visible = false,
-		ScrollingDirection = "Y",
-	}, {
-		New("UIPadding", {
-			PaddingTop = UDim.new(0, not Window.HidePanelBackground and 20 or 10),
-			PaddingLeft = UDim.new(0, not Window.HidePanelBackground and 20 or 10),
-			PaddingRight = UDim.new(0, not Window.HidePanelBackground and 20 or 10),
-			PaddingBottom = UDim.new(0, not Window.HidePanelBackground and 20 or 10),
-		}),
-		New("UIListLayout", {
-			SortOrder = "LayoutOrder",
-			Padding = UDim.new(0, Tab.Gap),
-			HorizontalAlignment = "Center",
-		}),
 	})
 
 	-- Tab.UIElements.ContainerFrame.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -343,6 +327,7 @@ function TabModule.New(Config, UIScale)
 			},
 			Position = UDim2.new(0, 0, 0, ((Window.UIPadding * 2.4) + 12)),
 			Visible = Tab.ShowTabTitle or false,
+			Name = "TabTitleDivider",
 		}),
 	})
 
@@ -350,6 +335,11 @@ function TabModule.New(Config, UIScale)
 	TabModule.Tabs[TabIndex] = Tab
 
 	Tab.ContainerFrame = Tab.UIElements.ContainerFrameCanvas
+
+	-- 右侧文件夹导航（真文件系统）：导航状态机收敛到 Navigator，
+	-- 对外入口一律走 Tab.Navigator（Push / Pop / PopTo / PopToRoot），Folder 直连
+	Tab.NavBarHeight = 40
+	Tab.Navigator = Navigator.New(Tab, { Window = Window })
 
 	Creator.AddSignal(Tab.UIElements.Main.MouseButton1Click, function()
 		if not Tab.Locked then
@@ -470,8 +460,8 @@ function TabModule.New(Config, UIScale)
 
 	function Tab:LockAll()
 		--print("LockAll called, number of elements: " .. #self.Elements)
-		-- 只遍历本 Tab 元素：原先全量扫描 Window.AllElements（O(全窗口元素)），
-		-- 且 AllElements 以 Tab 内下标为 key，本就不可靠
+		-- 只遍历本 Tab 根页面元素：Window.AllElements 是全窗口登记表（含各子容器内容），
+		-- 且全量扫描是 O(全窗口元素)；Tab.Elements 只含直接挂载的行，键即位置，可回查
 		for _, element in next, Tab.Elements do
 			if element.Lock then
 				element:Lock()

@@ -1,3 +1,5 @@
+local ContainerMixin = require("./Container")
+
 return {
 	Elements = {
 		Paragraph = require("./Paragraph"),
@@ -11,6 +13,7 @@ return {
 		Code = require("./Code"),
 		Colorpicker = require("./Colorpicker"),
 		Section = require("./Section"),
+		Folder = require("./Folder"),
 		Divider = require("./Divider"),
 		Space = require("./Space"),
 		Image = require("./Image"),
@@ -27,8 +30,8 @@ return {
 				config.Tab = Tab or tbl
 				config.ParentType = tbl.__type
 				config.ParentTable = tbl
+				config.Uid = ContainerMixin.NextUid()
 				config.Index = #tbl.Elements + 1
-				config.GlobalIndex = #Window.AllElements + 1
 				config.Parent = Container
 				config.Window = Window
 				config.WindUI = WindUI
@@ -95,21 +98,20 @@ return {
 					function content:Highlight()
 						frame:Highlight()
 					end
-					function content:Destroy()
-						frame:Destroy()
+				function content:Destroy()
+					frame:Destroy()
 
-						table.remove(Window.AllElements, config.GlobalIndex)
-						table.remove(tbl.Elements, config.Index)
-						table.remove(Tab.Elements, config.Index)
-						tbl:UpdateAllElementShapes(tbl)
-					end
+					Window.AllElements[content.__uid] = nil
+					ContainerMixin.Unregister(tbl, content)
+					tbl:UpdateAllElementShapes(tbl)
+				end
 				end
 
-				Window.AllElements[config.Index] = content
-				tbl.Elements[config.Index] = content
-				if Tab then
-					Tab.Elements[config.Index] = content
-				end
+			content.__uid = config.Uid
+			Window.AllElements[config.Uid] = content
+			-- 只注册到直接宿主：Tab.Elements 即根页面各行，保证整数键可回查；
+			-- 嵌套内容归各自 Folder/Section/Group 所有，不再互相覆盖同下标
+			ContainerMixin.Register(tbl, content)
 
 				if Window.NewElements then
 					tbl:UpdateAllElementShapes(tbl)

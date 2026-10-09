@@ -1364,3 +1364,42 @@ dropdownA = Tabs.ExampleTab:Dropdown({
 	Value = { "All" },
 	Callback = function(option) end,
 })
+
+-- 文件夹导航演示：侧边栏只留顶层 Tab，右侧双击下钻，二级以上顶部出现返回栏
+local FolderDemoTab = Window:Tab({
+	Title = "文件夹演示",
+	Icon = "folder",
+})
+
+local moveFolder = FolderDemoTab:Folder({
+	Title = "移动",
+	Icon = "folder",
+	Desc = "速度 / 飞行，双击进入",
+})
+moveFolder:Slider({
+	Title = "速度",
+	Min = 16,
+	Max = 500,
+	Default = 16,
+	Callback = function(v) end,
+})
+moveFolder:Toggle({
+	Title = "穿墙",
+	Default = false,
+	Callback = function(v) end,
+})
+
+local advFolder = moveFolder:Folder({
+	Title = "高级走位",
+	Icon = "folder",
+})
+advFolder:Button({
+	Title = "瞬移",
+	Callback = function() end,
+})
+
+FolderDemoTab:Button({
+	Title = "顶层文件",
+	Desc = "与文件夹同级，直接点击",
+	Callback = function() end,
+})
