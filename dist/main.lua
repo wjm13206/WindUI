@@ -4,7 +4,7 @@
     | |/ |/ / / _ \/ _  / /_/ // /  
     |__/|__/_/_//_/\_,_/\____/___/
     
-    v1.6.66  |  2026-10-06  |  Roblox UI Library for scripts
+    v1.6.66  |  2026-10-09  |  Roblox UI Library for scripts
     
     To view the source code, see the `src/` folder on the official GitHub repository.
     
@@ -28885,6 +28885,490 @@ end
 
 
 return b end function a.A():typeof(__modImpl())local b=a.cache.A if not b then b={c=__modImpl()}a.cache.A=b end return b.c end end do local function __modImpl()
+
+
+local b=a.j()
+local c=b.New
+
+local d={}
+
+
+
+
+
+
+
+
+
+
+
+function d.New(e)
+local f=e.Window
+local g=(f.HidePanelBackground and 10 or 20)
+
+local h={
+c("UIPadding",{
+PaddingTop=UDim.new(0,g),
+PaddingLeft=UDim.new(0,g),
+PaddingRight=UDim.new(0,g),
+PaddingBottom=UDim.new(0,g),
+}),
+c("UIListLayout",{
+SortOrder="LayoutOrder",
+Padding=UDim.new(0,e.Gap),
+HorizontalAlignment="Center",
+}),
+}
+
+if e.EmptyHint then
+table.insert(h,c("TextLabel",{
+Text=e.EmptyHint,
+TextSize=15,
+TextTransparency=0.6,
+ThemeTag={
+TextColor3="Text",
+},
+FontFace=Font.new(b.Font,Enum.FontWeight.Medium),
+Size=UDim2.new(1,0,0,40),
+BackgroundTransparency=1,
+Name="EmptyHint",
+}))
+end
+
+local j={
+Size=e.Size or UDim2.new(1,0,1,0),
+BackgroundTransparency=1,
+ScrollBarThickness=0,
+ElasticBehavior="Never",
+CanvasSize=UDim2.new(0,0,0,0),
+AnchorPoint=Vector2.new(0,1),
+Position=UDim2.new(0,0,1,0),
+AutomaticCanvasSize="Y",
+ScrollingDirection="Y",
+Visible=e.Visible~=false,
+}
+if e.Name then
+j.Name=e.Name
+end
+if e.Parent then
+j.Parent=e.Parent
+end
+
+return c("ScrollingFrame",j,h)
+end
+
+return d end function a.B():typeof(__modImpl())local b=a.cache.B if not b then b={c=__modImpl()}a.cache.B=b end return b.c end end do local function __modImpl()
+
+
+
+local b=a.j()
+local c=b.New
+
+local d={}
+
+
+local e=4
+local f=180
+
+
+
+
+
+
+
+function d.New(g)
+local h=g.Window
+local j=g.Height or 40
+
+local k=b.Image(
+"chevron-left",
+"navbar:back",
+0,
+h.Folder,
+"TabNav",
+true
+)
+k.Size=UDim2.new(0,18,0,18)
+
+local l=c("TextLabel",{
+Text="返回",
+TextSize=15,
+ThemeTag={
+TextColor3="Text",
+},
+FontFace=Font.new(b.Font,Enum.FontWeight.SemiBold),
+AutomaticSize="XY",
+BackgroundTransparency=1,
+})
+
+local m=c("TextButton",{
+Size=UDim2.new(0,0,0,28),
+AutomaticSize="X",
+BackgroundTransparency=1,
+Text="",
+Name="Back",
+},{
+k,
+l,
+c("UIListLayout",{
+FillDirection="Horizontal",
+VerticalAlignment="Center",
+Padding=UDim.new(0,2),
+}),
+})
+
+local n=c("Frame",{
+BackgroundTransparency=1,
+Size=UDim2.new(1,-90,1,0),
+ClipsDescendants=true,
+Name="Crumbs",
+},{
+c("UIListLayout",{
+SortOrder="LayoutOrder",
+FillDirection="Horizontal",
+VerticalAlignment="Center",
+Padding=UDim.new(0,2),
+}),
+})
+
+local o=c("Frame",{
+Size=UDim2.new(1,0,0,j),
+BackgroundTransparency=1,
+Visible=false,
+Name="FolderNavBar",
+Parent=g.Parent,
+},{
+m,
+n,
+c("UIListLayout",{
+FillDirection="Horizontal",
+VerticalAlignment="Center",
+Padding=UDim.new(0,10),
+}),
+c("UIPadding",{
+PaddingLeft=UDim.new(0,20),
+PaddingRight=UDim.new(0,20),
+}),
+})
+
+local p={
+Frame=o,
+Box=n,
+}
+
+local function AddSeparator(q)
+c("TextLabel",{
+Text="/",
+TextSize=13,
+TextTransparency=0.5,
+ThemeTag={
+TextColor3="Text",
+},
+FontFace=Font.new(b.Font,Enum.FontWeight.Medium),
+AutomaticSize="XY",
+BackgroundTransparency=1,
+LayoutOrder=q,
+Parent=n,
+})
+end
+
+local function AddCrumb(q,r,s,t)
+local u=c("TextButton",{
+Text=q,
+TextSize=14,
+TextTransparency=t and 0 or 0.35,
+TextTruncate="AtEnd",
+ThemeTag={
+TextColor3="Text",
+},
+FontFace=Font.new(b.Font,Enum.FontWeight.Medium),
+Size=UDim2.new(0,0,0,28),
+AutomaticSize="X",
+BackgroundTransparency=1,
+LayoutOrder=s,
+Parent=n,
+},{
+c("UISizeConstraint",{
+MaxSize=Vector2.new(f,math.huge),
+}),
+})
+b.AddSignal(u.MouseButton1Click,function()
+if g.OnJump then
+g.OnJump(r)
+end
+end)
+end
+
+
+function p.SetCrumbs(q,r)
+for s,t in next,n:GetChildren()do
+if t:IsA"GuiObject"then
+t:Destroy()
+end
+end
+if#r==0 then
+return
+end
+local s=r
+local t=false
+if#r>e then
+t=true
+s={}
+for u=#r-e+1,#r do
+table.insert(s,r[u])
+end
+end
+local u=0
+if t then
+u=u+1
+c("TextLabel",{
+Text="…",
+TextSize=14,
+TextTransparency=0.5,
+ThemeTag={
+TextColor3="Text",
+},
+FontFace=Font.new(b.Font,Enum.FontWeight.Medium),
+AutomaticSize="XY",
+BackgroundTransparency=1,
+LayoutOrder=u,
+Parent=n,
+})
+end
+for v,w in next,s do
+if v>1 or t then
+u=u+1
+AddSeparator(u)
+end
+u=u+1
+AddCrumb(w.Title,w.Level,u,v==#s)
+end
+end
+
+b.AddSignal(m.MouseButton1Click,function()
+if g.OnBack then
+g.OnBack()
+end
+end)
+
+return p
+end
+
+return d end function a.C():typeof(__modImpl())local b=a.cache.C if not b then b={c=__modImpl()}a.cache.C=b end return b.c end end do local function __modImpl()
+
+
+
+local b=a.C()
+
+local c={}
+
+
+
+
+function c.New(d,e)
+local f=e.Window
+local g=d.UIElements.ContainerFrameCanvas
+
+local h={
+Tab=d,
+RootPage=d.UIElements.ContainerFrame,
+Stack={},
+Pages={},
+BarHeight=d.NavBarHeight or 40,
+}
+
+h.Bar=b.New{
+Window=f,
+Height=h.BarHeight,
+Parent=g,
+OnBack=function()
+h:Pop()
+end,
+OnJump=function(j)
+h:PopTo(j)
+end,
+}
+d.UIElements.NavBar=h.Bar.Frame
+
+
+function h.Layout(j)
+local k=#h.Stack>0
+local l=0
+if not k and d.ShowTabTitle then
+l=(f.UIPadding*2.4)+12
+end
+local m=l+(k and h.BarHeight or 0)
+local function layout(n)
+if not n then
+return
+end
+n.AnchorPoint=Vector2.new(0,1)
+n.Position=UDim2.new(0,0,1,0)
+n.Size=UDim2.new(1,0,1,-m)
+end
+layout(h.RootPage)
+for n,o in next,h.Pages do
+if o and o.Page then
+layout(o.Page)
+end
+end
+end
+
+function h.Update(j)
+local k=#h.Stack>0
+h.Bar.Frame.Visible=k
+local l=g:FindFirstChild"TabTitle"
+if l then
+l.Visible=(d.ShowTabTitle or false)and(not k)
+end
+local m=g:FindFirstChild"TabTitleDivider"
+if m then
+m.Visible=(d.ShowTabTitle or false)and(not k)
+end
+if k then
+local n={{Title=d.Title,Level=0}}
+for o,p in next,h.Stack do
+table.insert(n,{Title=p.Title,Level=o})
+end
+h.Bar:SetCrumbs(n)
+end
+h:Layout()
+end
+
+function h.Register(j,k)
+table.insert(h.Pages,k)
+if k and k.Page then
+k.Page.Visible=false
+end
+h:Layout()
+end
+
+function h.Push(j,k)
+if not k or not k.Page then
+return
+end
+local l=h:Current()
+if l==k.Page then
+return
+end
+for m,n in next,h.Stack do
+if n==k then
+table.remove(h.Stack,m)
+break
+end
+end
+l.Visible=false
+table.insert(h.Stack,k)
+k.Page.Visible=true
+k.Page.CanvasPosition=Vector2.new(0,0)
+h:Update()
+end
+
+function h.Pop(j)
+if#h.Stack==0 then
+return false
+end
+local k=table.remove(h.Stack)
+if k and k.Page then
+k.Page.Visible=false
+end
+h:Current().Visible=true
+h:Update()
+return true
+end
+
+
+function h.PopTo(j,k)
+k=math.max(0,k or 0)
+if k>=#h.Stack then
+return false
+end
+while#h.Stack>k do
+local l=table.remove(h.Stack)
+if l and l.Page then
+l.Page.Visible=false
+end
+end
+h:Current().Visible=true
+h:Update()
+return true
+end
+
+function h.PopToRoot(j)
+if#h.Stack==0 then
+return
+end
+h:PopTo(0)
+end
+
+
+function h.Current(j)
+if#h.Stack==0 then
+return h.RootPage
+end
+return h.Stack[#h.Stack].Page
+end
+
+
+function h.Remove(j,k)
+for l,m in next,h.Pages do
+if m==k then
+table.remove(h.Pages,l)
+break
+end
+end
+for l,m in next,h.Stack do
+if m==k then
+table.remove(h.Stack,l)
+break
+end
+end
+h:Update()
+end
+
+h:Layout()
+
+return h
+end
+
+return c end function a.D():typeof(__modImpl())local b=a.cache.D if not b then b={c=__modImpl()}a.cache.D=b end return b.c end end do local function __modImpl()
+
+
+
+
+
+local b={}
+
+local c=0
+
+
+function b.NextUid()
+c=c+1
+return c
+end
+
+
+function b.Register(d,e)
+table.insert(d.Elements,e)
+return#d.Elements
+end
+
+
+function b.Unregister(d,e)
+if not d or not d.Elements then
+return false
+end
+for f,g in next,d.Elements do
+if g==e then
+table.remove(d.Elements,f)
+return true
+end
+end
+return false
+end
+
+return b end function a.E():typeof(__modImpl())local b=a.cache.E if not b then b={c=__modImpl()}a.cache.E=b end return b.c end end do local function __modImpl()
+
 game:GetService"ReplicatedStorage"
 local b=a.j()
 local c=b.New
@@ -29605,7 +30089,7 @@ end
 
 
 return j
-end end function a.B():typeof(__modImpl())local b=a.cache.B if not b then b={c=__modImpl()}a.cache.B=b end return b.c end end do local function __modImpl()
+end end function a.F():typeof(__modImpl())local b=a.cache.F if not b then b={c=__modImpl()}a.cache.F=b end return b.c end end do local function __modImpl()
 
 local b=a.j()
 local c=b.New
@@ -29627,7 +30111,7 @@ Desc=g.Desc or nil,
 
 Locked=g.Locked or false,
 }
-local j=a.B()(g)
+local j=a.F()(g)
 
 h.ParagraphFrame=j
 if g.Buttons and#g.Buttons>0 then
@@ -29662,7 +30146,7 @@ end
 return h.__type,h
 end
 
-return d end function a.C():typeof(__modImpl())local b=a.cache.C if not b then b={c=__modImpl()}a.cache.C=b end return b.c end end do local function __modImpl()
+return d end function a.G():typeof(__modImpl())local b=a.cache.G if not b then b={c=__modImpl()}a.cache.G=b end return b.c end end do local function __modImpl()
 
 local b=a.j()local c=
 b.New
@@ -29688,7 +30172,7 @@ UIElements={},
 
 local h=true
 
-g.ButtonFrame=a.B(){
+g.ButtonFrame=a.F(){
 Title=g.Title,
 Desc=g.Desc,
 Parent=f.Parent,
@@ -29771,7 +30255,7 @@ end)
 return g.__type,g
 end
 
-return d end function a.D():typeof(__modImpl())local b=a.cache.D if not b then b={c=__modImpl()}a.cache.D=b end return b.c end end do local function __modImpl()
+return d end function a.H():typeof(__modImpl())local b=a.cache.H if not b then b={c=__modImpl()}a.cache.H=b end return b.c end end do local function __modImpl()
 
 local b={}
 
@@ -30179,7 +30663,7 @@ end
 return r,o
 end
 
-return b end function a.E():typeof(__modImpl())local b=a.cache.E if not b then b={c=__modImpl()}a.cache.E=b end return b.c end end do local function __modImpl()
+return b end function a.I():typeof(__modImpl())local b=a.cache.I if not b then b={c=__modImpl()}a.cache.I=b end return b.c end end do local function __modImpl()
 
 local b={}
 
@@ -30280,13 +30764,13 @@ return p,m
 end
 
 
-return b end function a.F():typeof(__modImpl())local b=a.cache.F if not b then b={c=__modImpl()}a.cache.F=b end return b.c end end do local function __modImpl()
+return b end function a.J():typeof(__modImpl())local b=a.cache.J if not b then b={c=__modImpl()}a.cache.J=b end return b.c end end do local function __modImpl()
 local b=a.j()local c=
 b.New local d=
 b.Tween
 
-local e=a.E().New
-local f=a.F().New
+local e=a.I().New
+local f=a.J().New
 
 local g={}
 
@@ -30304,7 +30788,7 @@ Type=j.Type or"Toggle",
 Callback=j.Callback or function()end,
 UIElements={},
 }
-k.ToggleFrame=a.B(){
+k.ToggleFrame=a.F(){
 Title=k.Title,
 Desc=k.Desc,
 
@@ -30423,7 +30907,7 @@ end
 return k.__type,k
 end
 
-return g end function a.G():typeof(__modImpl())local b=a.cache.G if not b then b={c=__modImpl()}a.cache.G=b end return b.c end end do local function __modImpl()
+return g end function a.K():typeof(__modImpl())local b=a.cache.K if not b then b={c=__modImpl()}a.cache.K=b end return b.c end end do local function __modImpl()
 
 local b=(cloneref or clonereference or function(b)
 return b
@@ -30531,7 +31015,7 @@ x.Size=UDim2.new(0,n.IconSize,0,n.IconSize)
 y=y+n.IconSize-2
 end
 end
-n.SliderFrame=a.B(){
+n.SliderFrame=a.F(){
 Title=n.Title,
 Desc=n.Desc,
 Parent=m.Parent,
@@ -30850,7 +31334,7 @@ end)
 return n.__type,n
 end
 
-return j end function a.H():typeof(__modImpl())local b=a.cache.H if not b then b={c=__modImpl()}a.cache.H=b end return b.c end end do local function __modImpl()
+return j end function a.L():typeof(__modImpl())local b=a.cache.L if not b then b={c=__modImpl()}a.cache.L=b end return b.c end end do local function __modImpl()
 
 local b=a.j()
 local d=b.New
@@ -30956,7 +31440,7 @@ end
 return tostring(math.floor(t+0.5)).."%"
 end
 
-q.ProgressBarFrame=a.B(){
+q.ProgressBarFrame=a.F(){
 Title=q.Title,
 Desc=q.Desc,
 Parent=h.Parent,
@@ -31129,7 +31613,7 @@ Update(q.Value.Default,true)
 return q.__type,q
 end
 
-return f end function a.I():typeof(__modImpl())local b=a.cache.I if not b then b={c=__modImpl()}a.cache.I=b end return b.c end end do local function __modImpl()
+return f end function a.M():typeof(__modImpl())local b=a.cache.M if not b then b={c=__modImpl()}a.cache.M=b end return b.c end end do local function __modImpl()
 
 local b=(cloneref or clonereference or function(b)
 return b
@@ -31182,7 +31666,7 @@ table.insert(n,Enum.KeyCode[NormalizeKeyCode"Escape"])
 
 local o=true
 
-m.KeybindFrame=a.B(){
+m.KeybindFrame=a.F(){
 Title=m.Title,
 Desc=m.Desc,
 Parent=l.Parent,
@@ -31329,7 +31813,7 @@ end)
 return m.__type,m
 end
 
-return h end function a.J():typeof(__modImpl())local b=a.cache.J if not b then b={c=__modImpl()}a.cache.J=b end return b.c end end do local function __modImpl()
+return h end function a.N():typeof(__modImpl())local b=a.cache.N if not b then b={c=__modImpl()}a.cache.N=b end return b.c end end do local function __modImpl()
 
 local b={}
 
@@ -31454,7 +31938,7 @@ end
 return u
 end
 
-return b end function a.K():typeof(__modImpl())local b=a.cache.K if not b then b={c=__modImpl()}a.cache.K=b end return b.c end end do local function __modImpl()
+return b end function a.O():typeof(__modImpl())local b=a.cache.O if not b then b={c=__modImpl()}a.cache.O=b end return b.c end end do local function __modImpl()
 
 local b=a.j()local d=
 b.New local e=
@@ -31466,7 +31950,7 @@ UIPadding=8,
 }local g=a.s()
 
 .New
-local h=a.K().New
+local h=a.O().New
 
 function f.New(j,k)
 local l={
@@ -31488,7 +31972,7 @@ Width=150,
 
 local m=true
 
-l.InputFrame=a.B(){
+l.InputFrame=a.F(){
 Title=l.Title,
 Desc=l.Desc,
 Parent=k.Parent,
@@ -31564,7 +32048,7 @@ end
 return l.__type,l
 end
 
-return f end function a.L():typeof(__modImpl())local b=a.cache.L if not b then b={c=__modImpl()}a.cache.L=b end return b.c end end do local function __modImpl()
+return f end function a.P():typeof(__modImpl())local b=a.cache.P if not b then b={c=__modImpl()}a.cache.P=b end return b.c end end do local function __modImpl()
 
 local b=a.j()
 local f=b.New
@@ -31592,7 +32076,7 @@ k
 return"Divider",{__type="Divider",ElementFrame=l}
 end
 
-return g end function a.M():typeof(__modImpl())local b=a.cache.M if not b then b={c=__modImpl()}a.cache.M=b end return b.c end end do local function __modImpl()
+return g end function a.Q():typeof(__modImpl())local b=a.cache.Q if not b then b={c=__modImpl()}a.cache.Q=b end return b.c end end do local function __modImpl()
 local b={}
 
 local f=(cloneref or clonereference or function(f)
@@ -31605,7 +32089,7 @@ local j=f(game:GetService"Workspace").CurrentCamera local k=
 
 workspace.CurrentCamera
 
-local l=a.K().New
+local l=a.O().New
 
 local m=a.j()
 local n=m.New
@@ -32146,7 +32630,7 @@ Callback(z.Callback or function()end)
 end)
 end
 
-else a.M()
+else a.Q()
 :New{Parent=r.UIElements.Menu.Frame.ScrollingFrame}
 end
 end
@@ -32283,7 +32767,7 @@ UpdatePosition
 return u
 end
 
-return b end function a.N():typeof(__modImpl())local b=a.cache.N if not b then b={c=__modImpl()}a.cache.N=b end return b.c end end do local function __modImpl()
+return b end function a.R():typeof(__modImpl())local b=a.cache.R if not b then b={c=__modImpl()}a.cache.R=b end return b.c end end do local function __modImpl()
 
 local b=(cloneref or clonereference or function(b)
 return b
@@ -32297,9 +32781,9 @@ local g=a.j()
 local h=g.New local j=
 g.Tween
 
-local k=a.v().New local l=a.K()
+local k=a.v().New local l=a.O()
 .New
-local m=a.N().New local n=
+local m=a.R().New local n=
 
 workspace.CurrentCamera
 
@@ -32343,7 +32827,7 @@ if r.Values and typeof(r.Value)=="number"then
 r.Value=r.Values[r.Value]
 end
 
-r.DropdownFrame=a.B(){
+r.DropdownFrame=a.F(){
 Title=r.Title,
 Desc=r.Desc,
 Parent=q.Parent,
@@ -32416,7 +32900,7 @@ end
 return r.__type,r
 end
 
-return o end function a.O():typeof(__modImpl())local b=a.cache.O if not b then b={c=__modImpl()}a.cache.O=b end return b.c end end do local function __modImpl()
+return o end function a.S():typeof(__modImpl())local b=a.cache.S if not b then b={c=__modImpl()}a.cache.S=b end return b.c end end do local function __modImpl()
 
 
 
@@ -32679,7 +33163,7 @@ end
 return table.concat(w)
 end
 
-return b end function a.P():typeof(__modImpl())local b=a.cache.P if not b then b={c=__modImpl()}a.cache.P=b end return b.c end end do local function __modImpl()
+return b end function a.T():typeof(__modImpl())local b=a.cache.T if not b then b={c=__modImpl()}a.cache.T=b end return b.c end end do local function __modImpl()
 
 local b={}
 
@@ -32687,7 +33171,7 @@ local g=a.j()
 local h=g.New
 local k=g.Tween
 
-local m=a.P()
+local m=a.T()
 
 function b.New(n,o,p,q,r)
 local s={
@@ -32918,13 +33402,13 @@ end
 return s
 end
 
-return b end function a.Q():typeof(__modImpl())local b=a.cache.Q if not b then b={c=__modImpl()}a.cache.Q=b end return b.c end end do local function __modImpl()
+return b end function a.U():typeof(__modImpl())local b=a.cache.U if not b then b={c=__modImpl()}a.cache.U=b end return b.c end end do local function __modImpl()
 
 local b=a.j()local g=
 b.New
 
 
-local h=a.Q()
+local h=a.U()
 
 local k={}
 
@@ -33020,7 +33504,7 @@ o.ElementFrame=q.CodeFrame
 return o.__type,o
 end
 
-return k end function a.R():typeof(__modImpl())local b=a.cache.R if not b then b={c=__modImpl()}a.cache.R=b end return b.c end end do local function __modImpl()
+return k end function a.V():typeof(__modImpl())local b=a.cache.V if not b then b={c=__modImpl()}a.cache.V=b end return b.c end end do local function __modImpl()
 
 local b=a.j()
 local g=b.New local h=
@@ -33040,7 +33524,7 @@ local q=o.LocalPlayer
 local r=q:GetMouse()
 
 local s=a.s().New
-local t=a.K().New
+local t=a.O().New
 
 local u={
 UICorner=9,
@@ -33823,7 +34307,7 @@ local ad=true
 
 
 
-ac.ColorpickerFrame=a.B(){
+ac.ColorpickerFrame=a.F(){
 Title=ac.Title,
 Desc=ac.Desc,
 Parent=ab.Parent,
@@ -33901,7 +34385,7 @@ end)
 return ac.__type,ac
 end
 
-return u end function a.S():typeof(__modImpl())local aa=a.cache.S if not aa then aa={c=__modImpl()}a.cache.S=aa end return aa.c end end do local function __modImpl()
+return u end function a.W():typeof(__modImpl())local aa=a.cache.W if not aa then aa={c=__modImpl()}a.cache.W=aa end return aa.c end end do local function __modImpl()
 
 local aa=a.j()
 local ab=aa.New
@@ -34280,7 +34764,263 @@ end)
 return ag.__type,ag
 end
 
-return ad end function a.T():typeof(__modImpl())local aa=a.cache.T if not aa then aa={c=__modImpl()}a.cache.T=aa end return aa.c end end do local function __modImpl()
+return ad end function a.X():typeof(__modImpl())local aa=a.cache.X if not aa then aa={c=__modImpl()}a.cache.X=aa end return aa.c end end do local function __modImpl()
+
+local aa=(cloneref or clonereference or function(aa)
+return aa
+end)
+
+local ab=aa(game:GetService"UserInputService")
+
+local ac=a.j()
+local ad=ac.New
+
+local ae=a.B()
+
+local af={}
+
+
+
+function af.New(ag,ah)
+local b=ah.Window
+local g=ah.Tab
+local k=g and g.Navigator or nil
+local m=ah.ParentTable
+local n=(m and m.__type=="Folder")and m or nil
+
+local o={
+__type="Folder",
+Title=ah.Title or"新建文件夹",
+Desc=ah.Desc,
+Icon=ah.Icon or"folder",
+Locked=ah.Locked or false,
+LockedTitle=ah.LockedTitle,
+Elements={},
+Depth=(n and n.Depth or 0)+1,
+ParentFolder=n,
+RootTab=g,
+UIElements={},
+Page=nil,
+}
+
+local p=true
+
+
+o.FolderFrame=a.F(){
+Title=o.Title,
+Desc=o.Desc,
+Parent=ah.Parent,
+Window=b,
+Color=ah.Color,
+Justify="Between",
+TextOffset=84,
+Hover=true,
+Scalable=true,
+Tab=g,
+Index=ah.Index,
+ElementTable=o,
+ParentConfig=ah,
+Image=o.Icon,
+ImageSize=20,
+IconThemed=ah.IconThemed,
+}
+
+local q=o.FolderFrame.UIElements.Main
+
+
+local r=ad("TextLabel",{
+Text="0 项",
+TextSize=13,
+TextTransparency=0.4,
+ThemeTag={
+TextColor3="Text",
+},
+FontFace=Font.new(ac.Font,Enum.FontWeight.Medium),
+AutomaticSize="XY",
+BackgroundTransparency=1,
+})
+
+local s=ac.Image(
+"chevron-right",
+"chevron:"..o.Title,
+0,
+b.Folder,
+"FolderChevron",
+true
+)
+s.Size=UDim2.new(0,18,0,18)
+
+local t=ad("Frame",{
+BackgroundTransparency=1,
+AutomaticSize="XY",
+AnchorPoint=Vector2.new(1,0.5),
+Position=UDim2.new(1,-6,0.5,0),
+},{
+r,
+s,
+ad("UIListLayout",{
+FillDirection="Horizontal",
+VerticalAlignment="Center",
+Padding=UDim.new(0,6),
+}),
+})
+t.Parent=q
+
+o.UIElements.Row=q
+o.UIElements.Count=r
+
+function o.RefreshCount(u)
+local v=#o.Elements
+if r then
+r.Text=tostring(v).." 项"
+end
+if o.Page then
+local w=o.Page:FindFirstChild"EmptyHint"
+if w then
+w.Visible=(v==0)
+end
+end
+end
+
+function o.GetPath(u)
+local v={}
+local w=o
+while w do
+table.insert(v,1,w.Title)
+w=w.ParentFolder
+end
+if g then
+table.insert(v,1,g.Title)
+end
+return table.concat(v," / ")
+end
+
+function o.Open(u)
+if o.Locked or not p then
+return
+end
+if k then
+k:Push(o)
+end
+end
+
+function o.Close(u)
+if k and#k.Stack>0 then
+if k.Stack[#k.Stack]==o then
+k:Pop()
+end
+end
+end
+
+function o.Lock(u,v)
+o.Locked=true
+p=false
+return o.FolderFrame:Lock(v or o.LockedTitle)
+end
+
+function o.Unlock(u)
+o.Locked=false
+p=true
+return o.FolderFrame:Unlock()
+end
+
+
+o.Page=ae.New{
+Window=b,
+Gap=g.Gap,
+Visible=false,
+Parent=g.UIElements.ContainerFrameCanvas,
+Name="FolderPage",
+EmptyHint="此文件夹为空",
+}
+
+if k then
+k:Register(o)
+end
+
+
+local u=ah.ElementsModule
+u.Load(
+o,
+o.Page,
+u.Elements,
+b,
+ah.WindUI,
+function()
+o:RefreshCount()
+end,
+u,
+ah.UIScale,
+g
+)
+
+o:RefreshCount()
+
+
+ac.AddSignal(o.Page.ChildRemoved,function()
+task.defer(function()
+if o.RefreshCount then
+o:RefreshCount()
+end
+end)
+end)
+
+
+local v=o.FolderFrame.SetTitle
+function o.FolderFrame.SetTitle(w,x)
+v(w,x)
+if k then
+for y,z in next,k.Stack do
+if z==o then
+k:Update()
+break
+end
+end
+end
+end
+
+
+local w=o.FolderFrame.Destroy
+function o.FolderFrame.Destroy(x)
+if k then
+k:Remove(o)
+end
+if o.Page then
+o.Page:Destroy()
+o.Page=nil
+end
+w(x)
+end
+
+if o.Locked then
+o:Lock()
+end
+
+
+local x=0
+ac.AddSignal(q.MouseButton1Click,function()
+if o.Locked or not p then
+return
+end
+local y=ab.TouchEnabled and not ab.KeyboardEnabled
+if y then
+o:Open()
+return
+end
+local z=os.clock()
+if z-x<0.35 then
+x=0
+o:Open()
+else
+x=z
+o.FolderFrame:Highlight()
+end
+end)
+
+return o.__type,o
+end
+
+return af end function a.Y():typeof(__modImpl())local aa=a.cache.Y if not aa then aa={c=__modImpl()}a.cache.Y=aa end return aa.c end end do local function __modImpl()
 
 local aa=a.j()
 local ab=aa.New
@@ -34297,7 +35037,7 @@ BackgroundTransparency=1,
 return"Space",{__type="Space",ElementFrame=af}
 end
 
-return ac end function a.U():typeof(__modImpl())local aa=a.cache.U if not aa then aa={c=__modImpl()}a.cache.U=aa end return aa.c end end do local function __modImpl()
+return ac end function a.Z():typeof(__modImpl())local aa=a.cache.Z if not aa then aa={c=__modImpl()}a.cache.Z=aa end return aa.c end end do local function __modImpl()
 local aa=a.j()
 local ab=aa.New
 
@@ -34366,7 +35106,7 @@ end
 return af.__type,af
 end
 
-return ac end function a.V():typeof(__modImpl())local aa=a.cache.V if not aa then aa={c=__modImpl()}a.cache.V=aa end return aa.c end end do local function __modImpl()
+return ac end function a._():typeof(__modImpl())local aa=a.cache._ if not aa then aa={c=__modImpl()}a.cache._=aa end return aa.c end end do local function __modImpl()
 local aa=a.j()
 local ab=aa.New
 
@@ -34451,7 +35191,7 @@ ae.Tab
 return af.__type,af
 end
 
-return ac end function a.W():typeof(__modImpl())local aa=a.cache.W if not aa then aa={c=__modImpl()}a.cache.W=aa end return aa.c end end do local function __modImpl()
+return ac end function a.aa():typeof(__modImpl())local aa=a.cache.aa if not aa then aa={c=__modImpl()}a.cache.aa=aa end return aa.c end end do local function __modImpl()
 local aa=a.j()
 local ab=aa.New
 
@@ -34551,7 +35291,7 @@ end
 return af.__type,af
 end
 
-return ac end function a.X():typeof(__modImpl())local aa=a.cache.X if not aa then aa={c=__modImpl()}a.cache.X=aa end return aa.c end end do local function __modImpl()
+return ac end function a.ab():typeof(__modImpl())local aa=a.cache.ab if not aa then aa={c=__modImpl()}a.cache.ab=aa end return aa.c end end do local function __modImpl()
 
 local aa=a.j()
 local ab=aa.New
@@ -34638,7 +35378,7 @@ ae.Tab
 return af.__type,af
 end
 
-return ac end function a.Y():typeof(__modImpl())local aa=a.cache.Y if not aa then aa={c=__modImpl()}a.cache.Y=aa end return aa.c end end do local function __modImpl()
+return ac end function a.ac():typeof(__modImpl())local aa=a.cache.ac if not aa then aa={c=__modImpl()}a.cache.ac=aa end return aa.c end end do local function __modImpl()
 local aa=(cloneref or clonereference or function(aa)
 return aa
 end)
@@ -34874,157 +35614,159 @@ ah.Main=n
 return ah.__type,ah
 end
 
-return ae end function a.Z():typeof(__modImpl())local aa=a.cache.Z if not aa then aa={c=__modImpl()}a.cache.Z=aa end return aa.c end end do local function __modImpl()
+return ae end function a.ad():typeof(__modImpl())local aa=a.cache.ad if not aa then aa={c=__modImpl()}a.cache.ad=aa end return aa.c end end do local function __modImpl()
+
+local aa=a.E()
 
 return{
 Elements={
-Paragraph=a.C(),
-Button=a.D(),
-Toggle=a.G(),
-Slider=a.H(),
-ProgressBar=a.I(),
-Keybind=a.J(),
-Input=a.L(),
-Dropdown=a.O(),
-Code=a.R(),
-Colorpicker=a.S(),
-Section=a.T(),
-Divider=a.M(),
-Space=a.U(),
-Image=a.V(),
-Group=a.W(),
-HStack=a.X(),
-VStack=a.Y(),
-Viewport=a.Z(),
+Paragraph=a.G(),
+Button=a.H(),
+Toggle=a.K(),
+Slider=a.L(),
+ProgressBar=a.M(),
+Keybind=a.N(),
+Input=a.P(),
+Dropdown=a.S(),
+Code=a.V(),
+Colorpicker=a.W(),
+Section=a.X(),
+Folder=a.Y(),
+Divider=a.Q(),
+Space=a.Z(),
+Image=a._(),
+Group=a.aa(),
+HStack=a.ab(),
+VStack=a.ac(),
+Viewport=a.ad(),
 
 },
-Load=function(aa,ab,ac,ad,ae,af,ag,ah,b)
-for g,k in next,ac do
-aa[g]=function(m,n)
-n=n or{}
-n.Tab=b or aa
-n.ParentType=aa.__type
-n.ParentTable=aa
-n.Index=#aa.Elements+1
-n.GlobalIndex=#ad.AllElements+1
-n.Parent=ab
-n.Window=ad
-n.WindUI=ae
-n.UIScale=ah
-n.ElementsModule=ag local
+Load=function(ab,ac,ad,ae,af,ag,ah,b,g)
+for k,m in next,ad do
+ab[k]=function(n,o)
+o=o or{}
+o.Tab=g or ab
+o.ParentType=ab.__type
+o.ParentTable=ab
+o.Uid=aa.NextUid()
+o.Index=#ab.Elements+1
+o.Parent=ac
+o.Window=ae
+o.WindUI=af
+o.UIScale=b
+o.ElementsModule=ah local
 
-o, p=k:New(n)
+p, q=m:New(o)
 
-if n.Flag and typeof(n.Flag)=="string"then
-if ad.CurrentConfig then
-ad.CurrentConfig:Register(n.Flag,p)
+if o.Flag and typeof(o.Flag)=="string"then
+if ae.CurrentConfig then
+ae.CurrentConfig:Register(o.Flag,q)
 
-if ad.PendingConfigData and ad.PendingConfigData[n.Flag]then
-local q=ad.PendingConfigData[n.Flag]
+if ae.PendingConfigData and ae.PendingConfigData[o.Flag]then
+local r=ae.PendingConfigData[o.Flag]
 
-local r=ad.ConfigManager
-if r.Parser[q.__type]then
+local s=ae.ConfigManager
+if s.Parser[r.__type]then
 task.defer(function()
-local s,t=pcall(function()
-r.Parser[q.__type].Load(p,q)
+local t,u=pcall(function()
+s.Parser[r.__type].Load(q,r)
 end)
 
-if s then
-ad.PendingConfigData[n.Flag]=nil
+if t then
+ae.PendingConfigData[o.Flag]=nil
 else
 warn(
 "[ WindUI ] Failed to apply pending config for '"
-..n.Flag
+..o.Flag
 .."': "
-..tostring(t)
+..tostring(u)
 )
 end
 end)
 end
 end
 else
-ad.PendingFlags=ad.PendingFlags or{}
-ad.PendingFlags[n.Flag]=p
+ae.PendingFlags=ae.PendingFlags or{}
+ae.PendingFlags[o.Flag]=q
 end
 end
 
-local q
-for r,s in next,p do
-if typeof(s)=="table"and r~="ElementFrame"and r:match"Frame$"then
-q=s
+local r
+for s,t in next,q do
+if typeof(t)=="table"and s~="ElementFrame"and s:match"Frame$"then
+r=t
 break
 end
 end
 
-if q then
-p.ElementFrame=q.UIElements.Main
-function p.SetTitle(r,s)
-return q.SetTitle and q:SetTitle(s)
+if r then
+q.ElementFrame=r.UIElements.Main
+function q.SetTitle(s,t)
+return r.SetTitle and r:SetTitle(t)
 end
-function p.SetDesc(r,s)
-return q.SetDesc and q:SetDesc(s)
+function q.SetDesc(s,t)
+return r.SetDesc and r:SetDesc(t)
 end
-function p.SetImage(r,s,t)
-return q.SetImage and q:SetImage(s,t)
+function q.SetImage(s,t,u)
+return r.SetImage and r:SetImage(t,u)
 end
-function p.SetThumbnail(r,s,t)
-return q.SetThumbnail and q:SetThumbnail(s,t)
+function q.SetThumbnail(s,t,u)
+return r.SetThumbnail and r:SetThumbnail(t,u)
 end
-function p.Highlight(r)
-q:Highlight()
+function q.Highlight(s)
+r:Highlight()
 end
-function p.Destroy(r)
-q:Destroy()
+function q.Destroy(s)
+r:Destroy()
 
-table.remove(ad.AllElements,n.GlobalIndex)
-table.remove(aa.Elements,n.Index)
-table.remove(b.Elements,n.Index)
-aa:UpdateAllElementShapes(aa)
+ae.AllElements[q.__uid]=nil
+aa.Unregister(ab,q)
+ab:UpdateAllElementShapes(ab)
 end
-end
-
-ad.AllElements[n.Index]=p
-aa.Elements[n.Index]=p
-if b then
-b.Elements[n.Index]=p
 end
 
-if ad.NewElements then
-aa:UpdateAllElementShapes(aa)
+q.__uid=o.Uid
+ae.AllElements[o.Uid]=q
+
+
+aa.Register(ab,q)
+
+if ae.NewElements then
+ab:UpdateAllElementShapes(ab)
 end
 
-if af then
-af(p,aa.Elements)
+if ag then
+ag(q,ab.Elements)
 end
-return p
+return q
 end
 end
-function aa.UpdateAllElementShapes(g,k)
-for m,n in next,k.Elements do
-local o
-for p,q in pairs(n)do
-if typeof(q)=="table"and p:match"Frame$"then
-o=q
+function ab.UpdateAllElementShapes(k,m)
+for n,o in next,m.Elements do
+local p
+for q,r in pairs(o)do
+if typeof(r)=="table"and q:match"Frame$"then
+p=r
 break
 end
 end
 
-if not o and n.UpdateShape then
-o=n
+if not p and o.UpdateShape then
+p=o
 end
 
-if o then
+if p then
 
-o.Index=m
-if o.UpdateShape then
+p.Index=n
+if p.UpdateShape then
 
-o.UpdateShape(k)
+p.UpdateShape(m)
 end
 end
 end
 end
 end,
-}end function a._():typeof(__modImpl())local aa=a.cache._ if not aa then aa={c=__modImpl()}a.cache._=aa end return aa.c end end do local function __modImpl()
+}end function a.ae():typeof(__modImpl())local aa=a.cache.ae if not aa then aa={c=__modImpl()}a.cache.ae=aa end return aa.c end end do local function __modImpl()
 
 local aa=(cloneref or clonereference or function(aa)
 return aa
@@ -35040,10 +35782,12 @@ local ae=ad.New
 
 local af=a.A().New
 local ag=a.w().New
+local ah=a.B()
+local b=a.D()
 
 
 
-local ah={
+local g={
 
 
 Tabs={},
@@ -35053,35 +35797,35 @@ TabCount=0,
 ToolTipParent=nil,
 TabHighlight=nil,
 
-OnChangeFunc=function(ah)end,
+OnChangeFunc=function(g)end,
 }
 
-function ah.Init(b,g,k,m)
-Window=b
-WindUI=g
-ah.ToolTipParent=k
-ah.TabHighlight=m
-return ah
+function g.Init(k,m,n,o)
+Window=k
+WindUI=m
+g.ToolTipParent=n
+g.TabHighlight=o
+return g
 end
 
-function ah.New(b,g)
-local k={
+function g.New(k,m)
+local n={
 __type="Tab",
-Title=b.Title or"Tab",
-Desc=b.Desc,
-Icon=b.Icon,
-IconColor=b.IconColor,
-IconShape=b.IconShape,
-IconThemed=b.IconThemed,
-Locked=b.Locked,
-ShowTabTitle=b.ShowTabTitle,
-TabTitleAlign=b.TabTitleAlign or"Left",
-CustomEmptyPage=(b.CustomEmptyPage and next(b.CustomEmptyPage)~=nil)and b.CustomEmptyPage
+Title=k.Title or"Tab",
+Desc=k.Desc,
+Icon=k.Icon,
+IconColor=k.IconColor,
+IconShape=k.IconShape,
+IconThemed=k.IconThemed,
+Locked=k.Locked,
+ShowTabTitle=k.ShowTabTitle,
+TabTitleAlign=k.TabTitleAlign or"Left",
+CustomEmptyPage=(k.CustomEmptyPage and next(k.CustomEmptyPage)~=nil)and k.CustomEmptyPage
 or{Icon="lucide:frown",IconSize=48,Title="This tab is Empty",Desc=nil},
-Border=b.Border,
+Border=k.Border,
 Selected=false,
 Index=nil,
-Parent=b.Parent,
+Parent=k.Parent,
 UIElements={},
 Elements={},
 ContainerFrame=nil,
@@ -35102,28 +35846,28 @@ TitlePaddingY=0,
 
 
 
-if k.IconShape then
-k.TabPaddingX=2+(Window.UIPadding/4)
-k.TabPaddingY=2+(Window.UIPadding/4)
-k.TitlePaddingY=2+(Window.UIPadding/4)
+if n.IconShape then
+n.TabPaddingX=2+(Window.UIPadding/4)
+n.TabPaddingY=2+(Window.UIPadding/4)
+n.TitlePaddingY=2+(Window.UIPadding/4)
 end
 
-ah.TabCount=ah.TabCount+1
+g.TabCount=g.TabCount+1
 
-local m=ah.TabCount
-k.Index=m
+local o=g.TabCount
+n.Index=o
 
-k.UIElements.Main=ad.NewRoundFrame(k.UICorner,"Squircle",{
+n.UIElements.Main=ad.NewRoundFrame(n.UICorner,"Squircle",{
 BackgroundTransparency=1,
 Size=UDim2.new(1,-7,0,0),
 AutomaticSize="Y",
-Parent=b.Parent,
+Parent=k.Parent,
 ThemeTag={
 ImageColor3="TabBackground",
 },
 ImageTransparency=1,
 },{
-ad.NewRoundFrame(k.UICorner-1,"Glass-1.4",{
+ad.NewRoundFrame(n.UICorner-1,"Glass-1.4",{
 Size=UDim2.new(1,1,1,1),
 ThemeTag={
 ImageColor3="TabBorder",
@@ -35147,7 +35891,7 @@ Name="Outline",
 
 
 }),
-ad.NewRoundFrame(k.UICorner,"Squircle",{
+ad.NewRoundFrame(n.UICorner,"Squircle",{
 Size=UDim2.new(1,0,0,0),
 AutomaticSize="Y",
 ThemeTag={
@@ -35163,11 +35907,11 @@ FillDirection="Horizontal",
 VerticalAlignment="Center",
 }),
 ae("TextLabel",{
-Text=k.Title,
+Text=n.Title,
 ThemeTag={
 TextColor3="TabTitle",
 },
-TextTransparency=not k.Locked and 0.4 or 0.7,
+TextTransparency=not n.Locked and 0.4 or 0.7,
 TextSize=15,
 Size=UDim2.new(1,0,0,0),
 FontFace=Font.new(ad.Font,Enum.FontWeight.Medium),
@@ -35179,59 +35923,59 @@ TextXAlignment="Left",
 BackgroundTransparency=1,
 },{
 ae("UIPadding",{
-PaddingTop=UDim.new(0,k.TitlePaddingY),
+PaddingTop=UDim.new(0,n.TitlePaddingY),
 
 
-PaddingBottom=UDim.new(0,k.TitlePaddingY),
+PaddingBottom=UDim.new(0,n.TitlePaddingY),
 }),
 }),
 ae("UIPadding",{
-PaddingTop=UDim.new(0,k.TabPaddingY),
-PaddingLeft=UDim.new(0,k.TabPaddingX),
-PaddingRight=UDim.new(0,k.TabPaddingX),
-PaddingBottom=UDim.new(0,k.TabPaddingY),
+PaddingTop=UDim.new(0,n.TabPaddingY),
+PaddingLeft=UDim.new(0,n.TabPaddingX),
+PaddingRight=UDim.new(0,n.TabPaddingX),
+PaddingBottom=UDim.new(0,n.TabPaddingY),
 }),
 }),
 },true)
 
-local n=0
-local o
-local p
+local p=0
+local q
+local r
 
-if k.Icon then
-o=ad.Image(
-k.Icon,
-k.Icon..":"..k.Title,
+if n.Icon then
+q=ad.Image(
+n.Icon,
+n.Icon..":"..n.Title,
 0,
 Window.Folder,
-k.__type,
-k.IconColor and false or true,
-k.IconThemed,
+n.__type,
+n.IconColor and false or true,
+n.IconThemed,
 "TabIcon"
 )
-o.Size=UDim2.new(0,16,0,16)
-if k.IconColor then
-o.ImageLabel.ImageColor3=k.IconColor
+q.Size=UDim2.new(0,16,0,16)
+if n.IconColor then
+q.ImageLabel.ImageColor3=n.IconColor
 end
-if not k.IconShape then
-o.Parent=k.UIElements.Main.Frame
-k.UIElements.Icon=o
-o.ImageLabel.ImageTransparency=not k.Locked and 0 or 0.7
-n=-18-(Window.UIPadding/2)
-k.UIElements.Main.Frame.TextLabel.Size=UDim2.new(1,n,0,0)
-elseif k.IconColor then
+if not n.IconShape then
+q.Parent=n.UIElements.Main.Frame
+n.UIElements.Icon=q
+q.ImageLabel.ImageTransparency=not n.Locked and 0 or 0.7
+p=-18-(Window.UIPadding/2)
+n.UIElements.Main.Frame.TextLabel.Size=UDim2.new(1,p,0,0)
+elseif n.IconColor then
 ad.NewRoundFrame(
-k.IconShape~="Circle"and(k.UICorner+5-(2+(Window.UIPadding/4)))or 9999,
+n.IconShape~="Circle"and(n.UICorner+5-(2+(Window.UIPadding/4)))or 9999,
 "Squircle",
 {
 Size=UDim2.new(0,26,0,26),
-ImageColor3=k.IconColor,
-Parent=k.UIElements.Main.Frame,
+ImageColor3=n.IconColor,
+Parent=n.UIElements.Main.Frame,
 },
 {
-o,
+q,
 ad.NewRoundFrame(
-k.IconShape~="Circle"and(k.UICorner+5-(2+(Window.UIPadding/4)))or 9999,
+n.IconShape~="Circle"and(n.UICorner+5-(2+(Window.UIPadding/4)))or 9999,
 "Glass-1.4",
 {
 Size=UDim2.new(1,0,1,0),
@@ -35259,66 +36003,48 @@ Name="Outline",
 ),
 }
 )
-o.AnchorPoint=Vector2.new(0.5,0.5)
-o.Position=UDim2.new(0.5,0,0.5,0)
-o.ImageLabel.ImageTransparency=0
-o.ImageLabel.ImageColor3=ad.GetTextColorForHSB(k.IconColor,0.68)
-n=-28-(Window.UIPadding/2)
-k.UIElements.Main.Frame.TextLabel.Size=UDim2.new(1,n,0,0)
+q.AnchorPoint=Vector2.new(0.5,0.5)
+q.Position=UDim2.new(0.5,0,0.5,0)
+q.ImageLabel.ImageTransparency=0
+q.ImageLabel.ImageColor3=ad.GetTextColorForHSB(n.IconColor,0.68)
+p=-28-(Window.UIPadding/2)
+n.UIElements.Main.Frame.TextLabel.Size=UDim2.new(1,p,0,0)
 end
 
 
 
-if k.ShowTabTitle then
-p=
-ad.Image(k.Icon,k.Icon..":"..k.Title,0,Window.Folder,k.__type,true,k.IconThemed)
-p.Size=UDim2.new(0,16,0,16)
-p.ImageLabel.ImageTransparency=not k.Locked and 0 or 0.7
+if n.ShowTabTitle then
+r=
+ad.Image(n.Icon,n.Icon..":"..n.Title,0,Window.Folder,n.__type,true,n.IconThemed)
+r.Size=UDim2.new(0,16,0,16)
+r.ImageLabel.ImageTransparency=not n.Locked and 0 or 0.7
 end
-n=-30
+p=-30
 
 
 
 
 end
 
-k.UIElements.ContainerFrame=ae("ScrollingFrame",{
-Size=UDim2.new(1,0,1,k.ShowTabTitle and-((Window.UIPadding*2.4)+12)or 0),
-BackgroundTransparency=1,
-ScrollBarThickness=0,
-ElasticBehavior="Never",
-CanvasSize=UDim2.new(0,0,0,0),
-AnchorPoint=Vector2.new(0,1),
-Position=UDim2.new(0,0,1,0),
-AutomaticCanvasSize="Y",
 
-ScrollingDirection="Y",
-},{
-ae("UIPadding",{
-PaddingTop=UDim.new(0,not Window.HidePanelBackground and 20 or 10),
-PaddingLeft=UDim.new(0,not Window.HidePanelBackground and 20 or 10),
-PaddingRight=UDim.new(0,not Window.HidePanelBackground and 20 or 10),
-PaddingBottom=UDim.new(0,not Window.HidePanelBackground and 20 or 10),
-}),
-ae("UIListLayout",{
-SortOrder="LayoutOrder",
-Padding=UDim.new(0,k.Gap),
-HorizontalAlignment="Center",
-}),
-})
+n.UIElements.ContainerFrame=ah.New{
+Window=Window,
+Gap=n.Gap,
+Size=UDim2.new(1,0,1,n.ShowTabTitle and-((Window.UIPadding*2.4)+12)or 0),
+}
 
 
 
 
 
-k.UIElements.ContainerFrameCanvas=ae("Frame",{
+n.UIElements.ContainerFrameCanvas=ae("Frame",{
 Size=UDim2.new(1,0,1,0),
 BackgroundTransparency=1,
 Visible=false,
 Parent=Window.UIElements.MainBar,
 ZIndex=5,
 },{
-k.UIElements.ContainerFrame,
+n.UIElements.ContainerFrame,
 ae("Frame",{
 Size=UDim2.new(1,-14,1,-14),
 Position=UDim2.new(0.5,0,0.5,0),
@@ -35329,12 +36055,12 @@ Name="ScrollSliderHolder",
 ae("Frame",{
 Size=UDim2.new(1,0,0,((Window.UIPadding*2.4)+12)),
 BackgroundTransparency=1,
-Visible=k.ShowTabTitle or false,
+Visible=n.ShowTabTitle or false,
 Name="TabTitle",
 },{
-p,
+r,
 ae("TextLabel",{
-Text=k.Title,
+Text=n.Title,
 ThemeTag={
 TextColor3="Text",
 },
@@ -35360,7 +36086,7 @@ SortOrder="LayoutOrder",
 Padding=UDim.new(0,10),
 FillDirection="Horizontal",
 VerticalAlignment="Center",
-HorizontalAlignment=k.TabTitleAlign,
+HorizontalAlignment=n.TabTitleAlign,
 }),
 }),
 ae("Frame",{
@@ -35370,189 +36096,195 @@ ThemeTag={
 BackgroundColor3="Text",
 },
 Position=UDim2.new(0,0,0,((Window.UIPadding*2.4)+12)),
-Visible=k.ShowTabTitle or false,
+Visible=n.ShowTabTitle or false,
+Name="TabTitleDivider",
 }),
 })
 
-ah.Containers[m]=k.UIElements.ContainerFrameCanvas
-ah.Tabs[m]=k
+g.Containers[o]=n.UIElements.ContainerFrameCanvas
+g.Tabs[o]=n
 
-k.ContainerFrame=k.UIElements.ContainerFrameCanvas
+n.ContainerFrame=n.UIElements.ContainerFrameCanvas
 
-ad.AddSignal(k.UIElements.Main.MouseButton1Click,function()
-if not k.Locked then
-ah:SelectTab(m)
+
+
+n.NavBarHeight=40
+n.Navigator=b.New(n,{Window=Window})
+
+ad.AddSignal(n.UIElements.Main.MouseButton1Click,function()
+if not n.Locked then
+g:SelectTab(o)
 end
 end)
 
 if Window.ScrollBarEnabled then
 ag(
-k.UIElements.ContainerFrame,
-k.UIElements.ContainerFrameCanvas.ScrollSliderHolder,
+n.UIElements.ContainerFrame,
+n.UIElements.ContainerFrameCanvas.ScrollSliderHolder,
 Window,
 4,
 WindUI
 )
 end
 
-local q
-local r
 local s
-local t=false
+local t
+local u
+local v=false
 
 
-if k.Desc then
-ad.AddSignal(k.UIElements.Main.InputBegan,function()
-t=true
-r=task.spawn(function()
+if n.Desc then
+ad.AddSignal(n.UIElements.Main.InputBegan,function()
+v=true
+t=task.spawn(function()
 task.wait(0.35)
-if t and not q then
-q=af(k.Desc,ah.ToolTipParent,true)
-q.Container.AnchorPoint=Vector2.new(0.5,0.5)
+if v and not s then
+s=af(n.Desc,g.ToolTipParent,true)
+s.Container.AnchorPoint=Vector2.new(0.5,0.5)
 
 local function updatePosition()
-if q then
-q.Container.Position=UDim2.new(0,ac.X,0,ac.Y-4)
+if s then
+s.Container.Position=UDim2.new(0,ac.X,0,ac.Y-4)
 end
 end
 
 updatePosition()
-s=ac.Move:Connect(updatePosition)
-q:Open()
+u=ac.Move:Connect(updatePosition)
+s:Open()
 end
 end)
 end)
 end
 
-ad.AddSignal(k.UIElements.Main.MouseEnter,function()
-if not k.Locked then
-ad.SetThemeTag(k.UIElements.Main.Frame,{
+ad.AddSignal(n.UIElements.Main.MouseEnter,function()
+if not n.Locked then
+ad.SetThemeTag(n.UIElements.Main.Frame,{
 ImageTransparency="TabBackgroundHoverTransparency",
 ImageColor3="TabBackgroundHover",
 },0.1)
 end
 end)
-ad.AddSignal(k.UIElements.Main.InputEnded,function()
-if k.Desc then
-t=false
-if r then
-task.cancel(r)
-r=nil
+ad.AddSignal(n.UIElements.Main.InputEnded,function()
+if n.Desc then
+v=false
+if t then
+task.cancel(t)
+t=nil
+end
+if u then
+u:Disconnect()
+u=nil
 end
 if s then
-s:Disconnect()
+s:Close()
 s=nil
-end
-if q then
-q:Close()
-q=nil
 end
 end
 
-if not k.Locked then
-ad.SetThemeTag(k.UIElements.Main.Frame,{
+if not n.Locked then
+ad.SetThemeTag(n.UIElements.Main.Frame,{
 ImageTransparency="TabBorderTransparency",
 },0.1)
 end
 end)
 
-function k.ScrollToTheElement(u,v)
-k.UIElements.ContainerFrame.ScrollingEnabled=false
+function n.ScrollToTheElement(w,x)
+n.UIElements.ContainerFrame.ScrollingEnabled=false
 
-ad.Tween(k.UIElements.ContainerFrame,0.45,{
+ad.Tween(n.UIElements.ContainerFrame,0.45,{
 CanvasPosition=Vector2.new(
 0,
-k.Elements[v].ElementFrame.AbsolutePosition.Y
--k.UIElements.ContainerFrame.AbsolutePosition.Y
--k.UIElements.ContainerFrame.UIPadding.PaddingTop.Offset
+n.Elements[x].ElementFrame.AbsolutePosition.Y
+-n.UIElements.ContainerFrame.AbsolutePosition.Y
+-n.UIElements.ContainerFrame.UIPadding.PaddingTop.Offset
 ),
 },Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
 
 task.spawn(function()
 task.wait(0.48)
 
-if k.Elements[v].Highlight then
-k.Elements[v]:Highlight()
+if n.Elements[x].Highlight then
+n.Elements[x]:Highlight()
 end
-k.UIElements.ContainerFrame.ScrollingEnabled=true
+n.UIElements.ContainerFrame.ScrollingEnabled=true
 end)
 
-return k
+return n
 end
 
 
 
-local u=a._()
+local w=a.ae()
 
-u.Load(
-k,
-k.UIElements.ContainerFrame,
-u.Elements,
+w.Load(
+n,
+n.UIElements.ContainerFrame,
+w.Elements,
 Window,
 WindUI,
 nil,
-u,
-g,
-k
+w,
+m,
+n
 )
 
-function k.LockAll(v)
+function n.LockAll(x)
 
 
 
-for w,x in next,k.Elements do
-if x.Lock then
-x:Lock()
+for y,z in next,n.Elements do
+if z.Lock then
+z:Lock()
 end
 end
 end
-function k.UnlockAll(v)
-for w,x in next,k.Elements do
-if x.Unlock then
-x:Unlock()
+function n.UnlockAll(x)
+for y,z in next,n.Elements do
+if z.Unlock then
+z:Unlock()
 end
 end
 end
-function k.GetLocked(v)
-local w={}
+function n.GetLocked(x)
+local y={}
 
-for x,y in next,k.Elements do
-if y.Locked==true then
-table.insert(w,y)
-end
-end
-
-return w
-end
-function k.GetUnlocked(v)
-local w={}
-
-for x,y in next,k.Elements do
-if y.Locked==false then
-table.insert(w,y)
+for z,A in next,n.Elements do
+if A.Locked==true then
+table.insert(y,A)
 end
 end
 
-return w
+return y
+end
+function n.GetUnlocked(x)
+local y={}
+
+for z,A in next,n.Elements do
+if A.Locked==false then
+table.insert(y,A)
+end
 end
 
-function k.Select(v)
-return ah:SelectTab(k.Index)
+return y
+end
+
+function n.Select(x)
+return g:SelectTab(n.Index)
 end
 
 task.spawn(function()
-local v
-if k.CustomEmptyPage.Icon then
-v=
-ad.Image(k.CustomEmptyPage.Icon,k.CustomEmptyPage.Icon,0,"Temp","EmptyPage",true)
-v.Size=
-UDim2.fromOffset(k.CustomEmptyPage.IconSize or 48,k.CustomEmptyPage.IconSize or 48)
+local x
+if n.CustomEmptyPage.Icon then
+x=
+ad.Image(n.CustomEmptyPage.Icon,n.CustomEmptyPage.Icon,0,"Temp","EmptyPage",true)
+x.Size=
+UDim2.fromOffset(n.CustomEmptyPage.IconSize or 48,n.CustomEmptyPage.IconSize or 48)
 end
 
-local w=ae("Frame",{
+local y=ae("Frame",{
 BackgroundTransparency=1,
 Size=UDim2.new(1,0,1,-Window.UIElements.Main.Main.Topbar.AbsoluteSize.Y),
-Parent=k.UIElements.ContainerFrame,
+Parent=n.UIElements.ContainerFrame,
 },{
 ae("UIListLayout",{
 Padding=UDim.new(0,8),
@@ -35572,10 +36304,10 @@ FillDirection="Vertical",
 
 
 
-v,
-k.CustomEmptyPage.Title and ae("TextLabel",{
+x,
+n.CustomEmptyPage.Title and ae("TextLabel",{
 AutomaticSize="XY",
-Text=k.CustomEmptyPage.Title,
+Text=n.CustomEmptyPage.Title,
 ThemeTag={
 TextColor3="Text",
 },
@@ -35584,9 +36316,9 @@ TextTransparency=0.5,
 BackgroundTransparency=1,
 FontFace=Font.new(ad.Font,Enum.FontWeight.Medium),
 })or nil,
-k.CustomEmptyPage.Desc and ae("TextLabel",{
+n.CustomEmptyPage.Desc and ae("TextLabel",{
 AutomaticSize="XY",
-Text=k.CustomEmptyPage.Desc,
+Text=n.CustomEmptyPage.Desc,
 ThemeTag={
 TextColor3="Text",
 },
@@ -35601,104 +36333,104 @@ FontFace=Font.new(ad.Font,Enum.FontWeight.Regular),
 
 
 
-local x
-x=ad.AddSignal(k.UIElements.ContainerFrame.ChildAdded,function()
+local z
+z=ad.AddSignal(n.UIElements.ContainerFrame.ChildAdded,function()
 
-x:Disconnect()
-w:Destroy()
+z:Disconnect()
+y:Destroy()
 end)
 end)
 
-return k
+return n
 end
 
-function ah.OnChange(b,g)
-ah.OnChangeFunc=g
+function g.OnChange(k,m)
+g.OnChangeFunc=m
 end
 
-function ah.SelectTab(b,g)
-if not ah.Tabs[g].Locked then
-local k=ah.SelectedTab
+function g.SelectTab(k,m)
+if not g.Tabs[m].Locked then
+local n=g.SelectedTab
 
 
-if k==g then
-ah.OnChangeFunc(g)
+if n==m then
+g.OnChangeFunc(m)
 return
 end
-ah.SelectedTab=g
+g.SelectedTab=m
 
 
 
 
-local function SetTabActiveVisual(m,n)
-if m.Locked then
+local function SetTabActiveVisual(o,p)
+if o.Locked then
 return
 end
-if n then
-ad.SetThemeTag(m.UIElements.Main,{
+if p then
+ad.SetThemeTag(o.UIElements.Main,{
 ImageColor3="TabBackgroundActive",
 ImageTransparency="TabBackgroundActiveTransparency",
 },0.15)
-if m.Border then
-ad.SetThemeTag(m.UIElements.Main.Outline,{
+if o.Border then
+ad.SetThemeTag(o.UIElements.Main.Outline,{
 ImageTransparency="TabBorderTransparencyActive",
 },0.15)
 end
-ad.SetThemeTag(m.UIElements.Main.Frame.TextLabel,{
+ad.SetThemeTag(o.UIElements.Main.Frame.TextLabel,{
 TextTransparency="TabTextTransparencyActive",
 },0.15)
-if m.UIElements.Icon and not m.IconColor then
-ad.SetThemeTag(m.UIElements.Icon.ImageLabel,{
+if o.UIElements.Icon and not o.IconColor then
+ad.SetThemeTag(o.UIElements.Icon.ImageLabel,{
 ImageTransparency="TabIconTransparencyActive",
 },0.15)
 end
-m.Selected=true
+o.Selected=true
 else
-ad.SetThemeTag(m.UIElements.Main,{
+ad.SetThemeTag(o.UIElements.Main,{
 ImageTransparency="TabBorderTransparency",
 },0.15)
-if m.Border then
-ad.SetThemeTag(m.UIElements.Main.Outline,{
+if o.Border then
+ad.SetThemeTag(o.UIElements.Main.Outline,{
 ImageTransparency="TabBorderTransparency",
 },0.15)
 end
-ad.SetThemeTag(m.UIElements.Main.Frame.TextLabel,{
+ad.SetThemeTag(o.UIElements.Main.Frame.TextLabel,{
 TextTransparency="TabTextTransparency",
 },0.15)
-if m.UIElements.Icon and not m.IconColor then
-ad.SetThemeTag(m.UIElements.Icon.ImageLabel,{
+if o.UIElements.Icon and not o.IconColor then
+ad.SetThemeTag(o.UIElements.Icon.ImageLabel,{
 ImageTransparency="TabIconTransparency",
 },0.15)
 end
-m.Selected=false
+o.Selected=false
 end
 end
 
-if k and ah.Tabs[k]and k~=g then
-SetTabActiveVisual(ah.Tabs[k],false)
+if n and g.Tabs[n]and n~=m then
+SetTabActiveVisual(g.Tabs[n],false)
 end
-SetTabActiveVisual(ah.Tabs[g],true)
+SetTabActiveVisual(g.Tabs[m],true)
 
 task.spawn(function()
-for m,n in next,ah.Containers do
-n.AnchorPoint=Vector2.new(0,0.05)
-n.Visible=false
+for o,p in next,g.Containers do
+p.AnchorPoint=Vector2.new(0,0.05)
+p.Visible=false
 end
-ah.Containers[g].Visible=true
-local m=game:GetService"TweenService"
+g.Containers[m].Visible=true
+local o=game:GetService"TweenService"
 
-local n=TweenInfo.new(0.15,Enum.EasingStyle.Quart,Enum.EasingDirection.Out)
-local o=m:Create(ah.Containers[g],n,{
+local p=TweenInfo.new(0.15,Enum.EasingStyle.Quart,Enum.EasingDirection.Out)
+local q=o:Create(g.Containers[m],p,{
 AnchorPoint=Vector2.new(0,0),
 })
-o:Play()
+q:Play()
 end)
 
-ah.OnChangeFunc(g)
+g.OnChangeFunc(m)
 end
 end
 
-return ah end function a.aa():typeof(__modImpl())local aa=a.cache.aa if not aa then aa={c=__modImpl()}a.cache.aa=aa end return aa.c end end do local function __modImpl()
+return g end function a.af():typeof(__modImpl())local aa=a.cache.af if not aa then aa={c=__modImpl()}a.cache.af=aa end return aa.c end end do local function __modImpl()
 
 local aa={}
 
@@ -35707,7 +36439,7 @@ local ab=a.j()
 local ac=ab.New
 local ad=ab.Tween
 
-local ae=a.aa()
+local ae=a.af()
 
 function aa.New(af,ag,ah,b,g)
 local k={
@@ -35876,7 +36608,7 @@ return k
 end
 
 
-return aa end function a.ab():typeof(__modImpl())local aa=a.cache.ab if not aa then aa={c=__modImpl()}a.cache.ab=aa end return aa.c end end do local function __modImpl()
+return aa end function a.ag():typeof(__modImpl())local aa=a.cache.ag if not aa then aa={c=__modImpl()}a.cache.ag=aa end return aa.c end end do local function __modImpl()
 return{
 Tab="table-of-contents",
 Paragraph="type",
@@ -35889,7 +36621,7 @@ Dropdown="chevrons-up-down",
 Code="terminal",
 Colorpicker="palette",
 ProgressBar="chart-bar",
-}end function a.ac():typeof(__modImpl())local aa=a.cache.ac if not aa then aa={c=__modImpl()}a.cache.ac=aa end return aa.c end end do local function __modImpl()
+}end function a.ah():typeof(__modImpl())local aa=a.cache.ah if not aa then aa={c=__modImpl()}a.cache.ah=aa end return aa.c end end do local function __modImpl()
 
 local aa=(cloneref or clonereference or function(aa)
 return aa
@@ -35914,7 +36646,7 @@ Radius=22,
 Width=400,
 MaxHeight=380,
 
-Icons=a.ac(),
+Icons=a.ah(),
 }
 
 local g=ad("TextBox",{
@@ -36453,7 +37185,7 @@ end)
 return b
 end
 
-return ab end function a.ad():typeof(__modImpl())local aa=a.cache.ad if not aa then aa={c=__modImpl()}a.cache.ad=aa end return aa.c end end do local function __modImpl()
+return ab end function a.ai():typeof(__modImpl())local aa=a.cache.ai if not aa then aa={c=__modImpl()}a.cache.ai=aa end return aa.c end end do local function __modImpl()
 
 
 
@@ -38153,8 +38885,8 @@ if q.OpenButton and typeof(q.OpenButton)=="table"then
 q:EditOpenButton(q.OpenButton)
 end
 
-local N=a.aa()
-local O=a.ab()
+local N=a.af()
+local O=a.ag()
 local P=N.Init(q,p.WindUI,p.WindUI.TooltipGui)
 P:OnChange(function(Q)
 q.CurrentTab=Q
@@ -38611,7 +39343,7 @@ end)
 
 
 if not q.HideSearchBar then
-local U=a.ad()
+local U=a.ai()
 local V=false
 
 
@@ -38700,7 +39432,7 @@ end
 
 
 return q
-end end function a.ae():typeof(__modImpl())local aa=a.cache.ae if not aa then aa={c=__modImpl()}a.cache.ae=aa end return aa.c end end end
+end end function a.aj():typeof(__modImpl())local aa=a.cache.aj if not aa then aa={c=__modImpl()}a.cache.aj=aa end return aa.c end end end
 
 local aa={
 Window=nil,
@@ -38999,7 +39731,7 @@ aa:SetTheme"Dark"
 aa:SetLanguage(ak.Language)
 
 function aa.CreateWindow(p,q)
-local r=a.ae()
+local r=a.aj()
 
 if not af:IsStudio()and writefile then
 if not isfolder"WindUI"then
