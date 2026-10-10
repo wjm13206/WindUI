@@ -1,9 +1,3 @@
-local cloneref = (cloneref or clonereference or function(instance)
-	return instance
-end)
-
-local UserInputService = cloneref(game:GetService("UserInputService"))
-
 local Creator = require("../modules/Creator")
 local New = Creator.New
 
@@ -228,25 +222,13 @@ function Element:New(Config)
 		Folder:Lock()
 	end
 
-	-- 单击选中高亮，双击进入；触屏单击直接进入
-	local lastClick = 0
+	-- 单击直接进入
 	Creator.AddSignal(Main.MouseButton1Click, function()
 		if Folder.Locked or not CanOpen then
 			return
 		end
-		local touchOnly = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-		if touchOnly then
-			Folder:Open()
-			return
-		end
-		local now = os.clock()
-		if now - lastClick < 0.35 then
-			lastClick = 0
-			Folder:Open()
-		else
-			lastClick = now
-			Folder.FolderFrame:Highlight()
-		end
+		Folder.FolderFrame:Highlight()
+		Folder:Open()
 	end)
 
 	return Folder.__type, Folder

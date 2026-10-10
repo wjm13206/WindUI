@@ -1365,7 +1365,7 @@ dropdownA = Tabs.ExampleTab:Dropdown({
 	Callback = function(option) end,
 })
 
--- 文件夹导航演示：侧边栏只留顶层 Tab，右侧双击下钻，二级以上顶部出现返回栏
+-- 文件夹导航演示：侧边栏只留顶层 Tab，右侧单击下钻，二级以上顶部出现返回栏
 local FolderDemoTab = Window:Tab({
 	Title = "文件夹演示",
 	Icon = "folder",
@@ -1374,7 +1374,7 @@ local FolderDemoTab = Window:Tab({
 local moveFolder = FolderDemoTab:Folder({
 	Title = "移动",
 	Icon = "folder",
-	Desc = "速度 / 飞行，双击进入",
+	Desc = "速度 / 飞行，单击进入",
 })
 moveFolder:Slider({
 	Title = "速度",

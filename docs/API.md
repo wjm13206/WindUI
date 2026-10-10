@@ -1,13 +1,13 @@
 # WindUI 文件夹导航 API
 
-侧边栏只显示最顶层 Tab；右侧主界面里文件夹与文件混排，双击文件夹进入下一级，
+侧边栏只显示最顶层 Tab；右侧主界面里文件夹与文件混排，单击文件夹进入下一级，
 二级及以上顶部出现安卓式返回栏 + 可点面包屑。行为对标真实文件系统。
 
 ```
 Window
 └── Tab（侧边栏顶层，唯一可进栈的根页面）
     ├── Button / Slider / …（文件行，直接点击）
-    └── Folder（文件夹行，双击进入）
+    └── Folder（文件夹行，单击进入）
         ├── Button / Slider / …（文件行）
         └── Folder（子文件夹，可继续下钻）
 ```
@@ -46,9 +46,7 @@ advFolder:Button({ Title = "瞬移", Callback = function() end })
 
 | 操作 | 行为 |
 |---|---|
-| PC 双击（0.35 秒内两次单击） | 进入子页面 |
-| PC 单击 | 仅高亮选中行，不进入 |
-| 触屏单击（无键盘设备） | 直接进入子页面 |
+| 单击 | 进入子页面（同时高亮选中行） |
 | 返回栏"返回"按钮 / 面包屑 | 逐级返回 / 跳到任意层级（0 = 根）|
 | 文件夹行为空 | 子页面显示"此文件夹为空" |
 
@@ -56,7 +54,7 @@ advFolder:Button({ Title = "瞬移", Callback = function() end })
 
 | 方法 | 说明 |
 |---|---|
-| `folder:Open()` | 进入该文件夹（等价双击；锁定或已锁定行时无操作） |
+| `folder:Open()` | 进入该文件夹（等价单击；锁定或已锁定行时无操作） |
 | `folder:Close()` | 仅当自己是栈顶时返回上一级，否则无操作 |
 | `folder:Lock(title?)` | 锁定：不可进入。`title` 缺省用创建时的 `LockedTitle` |
 | `folder:Unlock()` | 解锁 |
@@ -181,7 +179,7 @@ local Tab = Window:Tab({ Title = "玩法", Icon = "gamepad-2" })
 Tab:Button({ Title = "一键秒杀", Callback = function() end })
 
 -- 一级文件夹
-local move = Tab:Folder({ Title = "移动", Desc = "速度 / 飞行，双击进入" })
+local move = Tab:Folder({ Title = "移动", Desc = "速度 / 飞行，单击进入" })
 move:Slider({ Title = "速度", Min = 16, Max = 500, Default = 16 })
 move:Toggle({ Title = "穿墙", Default = false })
 
