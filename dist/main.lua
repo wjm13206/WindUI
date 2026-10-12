@@ -4,7 +4,7 @@
     | |/ |/ / / _ \/ _  / /_/ // /  
     |__/|__/_/_//_/\_,_/\____/___/
     
-    v1.6.66  |  2026-10-09  |  Roblox UI Library for scripts
+    v1.6.66  |  2026-10-10  |  Roblox UI Library for scripts
     
     To view the source code, see the `src/` folder on the official GitHub repository.
     
@@ -34766,213 +34766,207 @@ end
 
 return ad end function a.X():typeof(__modImpl())local aa=a.cache.X if not aa then aa={c=__modImpl()}a.cache.X=aa end return aa.c end end do local function __modImpl()
 
-local aa=(cloneref or clonereference or function(aa)
-return aa
-end)
+local aa=a.j()
+local ab=aa.New
 
-local ab=aa(game:GetService"UserInputService")
+local ac=a.B()
 
-local ac=a.j()
-local ad=ac.New
-
-local ae=a.B()
-
-local af={}
+local ad={}
 
 
 
-function af.New(ag,ah)
-local b=ah.Window
-local g=ah.Tab
-local k=g and g.Navigator or nil
-local m=ah.ParentTable
-local n=(m and m.__type=="Folder")and m or nil
+function ad.New(ae,af)
+local ag=af.Window
+local ah=af.Tab
+local b=ah and ah.Navigator or nil
+local g=af.ParentTable
+local k=(g and g.__type=="Folder")and g or nil
 
-local o={
+local m={
 __type="Folder",
-Title=ah.Title or"新建文件夹",
-Desc=ah.Desc,
-Icon=ah.Icon or"folder",
-Locked=ah.Locked or false,
-LockedTitle=ah.LockedTitle,
+Title=af.Title or"新建文件夹",
+Desc=af.Desc,
+Icon=af.Icon or"folder",
+Locked=af.Locked or false,
+LockedTitle=af.LockedTitle,
 Elements={},
-Depth=(n and n.Depth or 0)+1,
-ParentFolder=n,
-RootTab=g,
+Depth=(k and k.Depth or 0)+1,
+ParentFolder=k,
+RootTab=ah,
 UIElements={},
 Page=nil,
 }
 
-local p=true
+local n=true
 
 
-o.FolderFrame=a.F(){
-Title=o.Title,
-Desc=o.Desc,
-Parent=ah.Parent,
-Window=b,
-Color=ah.Color,
+m.FolderFrame=a.F(){
+Title=m.Title,
+Desc=m.Desc,
+Parent=af.Parent,
+Window=ag,
+Color=af.Color,
 Justify="Between",
 TextOffset=84,
 Hover=true,
 Scalable=true,
-Tab=g,
-Index=ah.Index,
-ElementTable=o,
-ParentConfig=ah,
-Image=o.Icon,
+Tab=ah,
+Index=af.Index,
+ElementTable=m,
+ParentConfig=af,
+Image=m.Icon,
 ImageSize=20,
-IconThemed=ah.IconThemed,
+IconThemed=af.IconThemed,
 }
 
-local q=o.FolderFrame.UIElements.Main
+local o=m.FolderFrame.UIElements.Main
 
 
-local r=ad("TextLabel",{
+local p=ab("TextLabel",{
 Text="0 项",
 TextSize=13,
 TextTransparency=0.4,
 ThemeTag={
 TextColor3="Text",
 },
-FontFace=Font.new(ac.Font,Enum.FontWeight.Medium),
+FontFace=Font.new(aa.Font,Enum.FontWeight.Medium),
 AutomaticSize="XY",
 BackgroundTransparency=1,
 })
 
-local s=ac.Image(
+local q=aa.Image(
 "chevron-right",
-"chevron:"..o.Title,
+"chevron:"..m.Title,
 0,
-b.Folder,
+ag.Folder,
 "FolderChevron",
 true
 )
-s.Size=UDim2.new(0,18,0,18)
+q.Size=UDim2.new(0,18,0,18)
 
-local t=ad("Frame",{
+local r=ab("Frame",{
 BackgroundTransparency=1,
 AutomaticSize="XY",
 AnchorPoint=Vector2.new(1,0.5),
 Position=UDim2.new(1,-6,0.5,0),
 },{
-r,
-s,
-ad("UIListLayout",{
+p,
+q,
+ab("UIListLayout",{
 FillDirection="Horizontal",
 VerticalAlignment="Center",
 Padding=UDim.new(0,6),
 }),
 })
-t.Parent=q
+r.Parent=o
 
-o.UIElements.Row=q
-o.UIElements.Count=r
+m.UIElements.Row=o
+m.UIElements.Count=p
 
-function o.RefreshCount(u)
-local v=#o.Elements
-if r then
-r.Text=tostring(v).." 项"
+function m.RefreshCount(s)
+local t=#m.Elements
+if p then
+p.Text=tostring(t).." 项"
 end
-if o.Page then
-local w=o.Page:FindFirstChild"EmptyHint"
-if w then
-w.Visible=(v==0)
+if m.Page then
+local u=m.Page:FindFirstChild"EmptyHint"
+if u then
+u.Visible=(t==0)
 end
 end
-end
-
-function o.GetPath(u)
-local v={}
-local w=o
-while w do
-table.insert(v,1,w.Title)
-w=w.ParentFolder
-end
-if g then
-table.insert(v,1,g.Title)
-end
-return table.concat(v," / ")
 end
 
-function o.Open(u)
-if o.Locked or not p then
+function m.GetPath(s)
+local t={}
+local u=m
+while u do
+table.insert(t,1,u.Title)
+u=u.ParentFolder
+end
+if ah then
+table.insert(t,1,ah.Title)
+end
+return table.concat(t," / ")
+end
+
+function m.Open(s)
+if m.Locked or not n then
 return
 end
-if k then
-k:Push(o)
+if b then
+b:Push(m)
 end
 end
 
-function o.Close(u)
-if k and#k.Stack>0 then
-if k.Stack[#k.Stack]==o then
-k:Pop()
+function m.Close(s)
+if b and#b.Stack>0 then
+if b.Stack[#b.Stack]==m then
+b:Pop()
 end
 end
 end
 
-function o.Lock(u,v)
-o.Locked=true
-p=false
-return o.FolderFrame:Lock(v or o.LockedTitle)
+function m.Lock(s,t)
+m.Locked=true
+n=false
+return m.FolderFrame:Lock(t or m.LockedTitle)
 end
 
-function o.Unlock(u)
-o.Locked=false
-p=true
-return o.FolderFrame:Unlock()
+function m.Unlock(s)
+m.Locked=false
+n=true
+return m.FolderFrame:Unlock()
 end
 
 
-o.Page=ae.New{
-Window=b,
-Gap=g.Gap,
+m.Page=ac.New{
+Window=ag,
+Gap=ah.Gap,
 Visible=false,
-Parent=g.UIElements.ContainerFrameCanvas,
+Parent=ah.UIElements.ContainerFrameCanvas,
 Name="FolderPage",
 EmptyHint="此文件夹为空",
 }
 
-if k then
-k:Register(o)
+if b then
+b:Register(m)
 end
 
 
-local u=ah.ElementsModule
-u.Load(
-o,
-o.Page,
-u.Elements,
-b,
-ah.WindUI,
+local s=af.ElementsModule
+s.Load(
+m,
+m.Page,
+s.Elements,
+ag,
+af.WindUI,
 function()
-o:RefreshCount()
+m:RefreshCount()
 end,
-u,
-ah.UIScale,
-g
+s,
+af.UIScale,
+ah
 )
 
-o:RefreshCount()
+m:RefreshCount()
 
 
-ac.AddSignal(o.Page.ChildRemoved,function()
+aa.AddSignal(m.Page.ChildRemoved,function()
 task.defer(function()
-if o.RefreshCount then
-o:RefreshCount()
+if m.RefreshCount then
+m:RefreshCount()
 end
 end)
 end)
 
 
-local v=o.FolderFrame.SetTitle
-function o.FolderFrame.SetTitle(w,x)
-v(w,x)
-if k then
-for y,z in next,k.Stack do
-if z==o then
-k:Update()
+local t=m.FolderFrame.SetTitle
+function m.FolderFrame.SetTitle(u,v)
+t(u,v)
+if b then
+for w,x in next,b.Stack do
+if x==m then
+b:Update()
 break
 end
 end
@@ -34980,47 +34974,35 @@ end
 end
 
 
-local w=o.FolderFrame.Destroy
-function o.FolderFrame.Destroy(x)
-if k then
-k:Remove(o)
+local u=m.FolderFrame.Destroy
+function m.FolderFrame.Destroy(v)
+if b then
+b:Remove(m)
 end
-if o.Page then
-o.Page:Destroy()
-o.Page=nil
+if m.Page then
+m.Page:Destroy()
+m.Page=nil
 end
-w(x)
-end
-
-if o.Locked then
-o:Lock()
+u(v)
 end
 
+if m.Locked then
+m:Lock()
+end
 
-local x=0
-ac.AddSignal(q.MouseButton1Click,function()
-if o.Locked or not p then
+
+aa.AddSignal(o.MouseButton1Click,function()
+if m.Locked or not n then
 return
 end
-local y=ab.TouchEnabled and not ab.KeyboardEnabled
-if y then
-o:Open()
-return
-end
-local z=os.clock()
-if z-x<0.35 then
-x=0
-o:Open()
-else
-x=z
-o.FolderFrame:Highlight()
-end
+m.FolderFrame:Highlight()
+m:Open()
 end)
 
-return o.__type,o
+return m.__type,m
 end
 
-return af end function a.Y():typeof(__modImpl())local aa=a.cache.Y if not aa then aa={c=__modImpl()}a.cache.Y=aa end return aa.c end end do local function __modImpl()
+return ad end function a.Y():typeof(__modImpl())local aa=a.cache.Y if not aa then aa={c=__modImpl()}a.cache.Y=aa end return aa.c end end do local function __modImpl()
 
 local aa=a.j()
 local ab=aa.New
