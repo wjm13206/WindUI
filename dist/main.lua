@@ -4,7 +4,7 @@
     | |/ |/ / / _ \/ _  / /_/ // /  
     |__/|__/_/_//_/\_,_/\____/___/
     
-    v1.6.66  |  2026-10-10  |  Roblox UI Library for scripts
+    v1.6.66  |  2026-10-12  |  Roblox UI Library for scripts
     
     To view the source code, see the `src/` folder on the official GitHub repository.
     
@@ -25037,6 +25037,16 @@ table.insert(q.Signals,t)
 return t
 end
 
+function q.Disconnect(r)
+local s=table.find(q.Signals,r)
+if s then
+table.remove(q.Signals,s)
+end
+pcall(function()
+r:Disconnect()
+end)
+end
+
 function q.DisconnectAll()
 for r,s in pairs(q.Signals)do
 pcall(function()
@@ -28453,7 +28463,9 @@ f(game:GetService"UserInputService")
 
 function b.New(g)
 local h={
-Button=nil
+Button=nil,
+Container=nil,
+_Destroyed=false,
 }
 
 local j
@@ -28582,6 +28594,7 @@ PaddingRight=UDim.new(0,4),
 })
 
 h.Button=p
+h.Container=n
 
 
 
@@ -28629,7 +28642,20 @@ local q=c.Drag(n)
 
 
 function h.Visible(r,s)
+if h._Destroyed then
+return
+end
 n.Visible=s
+end
+
+function h.Destroy(r)
+if h._Destroyed then
+return
+end
+h._Destroyed=true
+pcall(function()
+n:Destroy()
+end)
 end
 
 function h.SetScale(r,s)
@@ -37907,6 +37933,12 @@ TextColor3="WindowTopbarTitle",
 },
 })
 
+
+
+q.UIScaleObj=ah("UIScale",{
+Scale=p.WindUI.UIScale,
+})
+
 q.UIElements.Main=ah("Frame",{
 Size=UDim2.new(q.Size.X.Scale,q.Size.X.Offset,0,0),
 Position=q.Position,
@@ -37916,7 +37948,7 @@ AnchorPoint=Vector2.new(0.5,0.5),
 Active=true,
 
 },{
-p.WindUI.UIScaleObj,
+q.UIScaleObj,
 q.AcrylicPaint and q.AcrylicPaint.Frame or nil,
 x,
 ag.NewRoundFrame(q.UICorner,"Squircle",{
@@ -38445,7 +38477,10 @@ q.IsFullscreen=not O
 SetSize(true)
 end
 
-ag.AddSignal(p.WindUI.ScreenGui:GetPropertyChangedSignal"AbsoluteSize",function()
+
+q._Connections={}
+
+q._Connections.ScreenResize=ag.AddSignal(p.WindUI.ScreenGui:GetPropertyChangedSignal"AbsoluteSize",function()
 if q.IsFullscreen then
 SetSize()
 end
@@ -38601,7 +38636,11 @@ q.UIElements.Main.Visible=true
 
 q.UIElements.Main:WaitForChild"Main".Visible=true
 
-p.WindUI:ToggleAcrylic(true)
+
+p.WindUI:_AcrylicRegister(q)
+if q.AcrylicPaint and q.AcrylicPaint.SetVisibility then
+q.AcrylicPaint.SetVisibility(true)
+end
 
 end)
 end
@@ -38618,7 +38657,12 @@ ag.SafeCallback(q.OnCloseCallback)
 end)
 end
 
-p.WindUI:ToggleAcrylic(false)
+
+
+p.WindUI:_AcrylicUnregister(q)
+if q.AcrylicPaint and q.AcrylicPaint.SetVisibility then
+q.AcrylicPaint.SetVisibility(false)
+end
 
 if q.UIElements.Main and q.UIElements.Main:WaitForChild"Main"then
 q.UIElements.Main.Main.Visible=false
@@ -38710,12 +38754,32 @@ q.Destroyed=true
 
 task.wait(0.4)
 
-p.WindUI.ScreenGui:Destroy()
-p.WindUI.NotificationGui:Destroy()
-p.WindUI.DropdownGui:Destroy()
-p.WindUI.TooltipGui:Destroy()
 
-ag.DisconnectAll()
+
+
+
+if q.OpenButtonMain and q.OpenButtonMain.Destroy then
+pcall(function()
+q.OpenButtonMain:Destroy()
+end)
+end
+
+if q.UIElements.Main then
+pcall(function()
+q.UIElements.Main:Destroy()
+end)
+end
+
+
+
+if q._Connections then
+for Q,R in pairs(q._Connections)do
+ag.Disconnect(R)
+end
+table.clear(q._Connections)
+end
+
+p.WindUI:_UnregisterWindow(q)
 
 return
 end)
@@ -38787,8 +38851,16 @@ end
 
 function q.SetUIScale(N,O)
 p.WindUI.UIScale=O
-b(p.WindUI.UIScaleObj,0.2,{Scale=O},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
-return q
+
+for P,Q in ipairs(p.WindUI.Windows)do
+if Q.UIScaleObj and not Q.Destroyed then
+if Q==q then
+b(Q.UIScaleObj,0.2,{Scale=O},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
+else
+Q.UIScaleObj.Scale=O
+end
+end
+end
 end
 
 function q.SetToTheCenter(N)
@@ -38835,6 +38907,7 @@ end
 end
 
 if q.OpenButtonMain and q.OpenButtonMain.Button then
+q._Connections.OpenButtonClick=
 ag.AddSignal(q.OpenButtonMain.Button.TextButton.MouseButton1Click,function()
 
 
@@ -38842,7 +38915,7 @@ q:Open()
 end)
 end
 
-ag.AddSignal(ab.InputBegan,function(N,O)
+q._Connections.ToggleKey=ag.AddSignal(ab.InputBegan,function(N,O)
 if O then
 return
 end
@@ -39418,6 +39491,9 @@ end end function a.aj():typeof(__modImpl())local aa=a.cache.aj if not aa then aa
 
 local aa={
 Window=nil,
+Windows={},
+_AcrylicInit=false,
+_AcrylicOpen={},
 Theme=nil,
 Creator=a.j(),
 LocalizationModule=a.k(),
@@ -39641,6 +39717,74 @@ end
 return false
 end
 
+function aa._RefreshAcrylic(p)
+if not p._AcrylicInit then
+return
+end
+local q=false
+for r,s in pairs(p._AcrylicOpen)do
+if not r.Destroyed and not r.Closed and r.Acrylic then
+q=true
+break
+end
+end
+if q then
+g.Enable()
+else
+g.Disable()
+end
+end
+
+function aa._AcrylicRegister(p,q)
+if q.Acrylic then
+p._AcrylicOpen[q]=true
+end
+p:_RefreshAcrylic()
+end
+
+function aa._AcrylicUnregister(p,q)
+p._AcrylicOpen[q]=nil
+p:_RefreshAcrylic()
+end
+
+function aa._UnregisterWindow(p,q)
+p._AcrylicOpen[q]=nil
+local r=table.find(p.Windows,q)
+if r then
+table.remove(p.Windows,r)
+end
+if p.Window==q then
+p.Window=p.Windows[1]
+end
+p:_RefreshAcrylic()
+end
+
+function aa.DestroyAll(p)
+for q,r in ipairs(table.clone(p.Windows))do
+if r.Destroy then
+pcall(function()
+r:Destroy()
+end)
+end
+end
+table.clear(p.Windows)
+table.clear(p._AcrylicOpen)
+p.Window=nil
+if p.ScreenGui then
+p.ScreenGui:Destroy()
+end
+if p.NotificationGui then
+p.NotificationGui:Destroy()
+end
+if p.DropdownGui then
+p.DropdownGui:Destroy()
+end
+if p.TooltipGui then
+p.TooltipGui:Destroy()
+end
+ak.DisconnectAll()
+end
+
 function aa.ToggleAcrylic(p,q)
 if aa.Window and aa.Window.AcrylicPaint and aa.Window.AcrylicPaint.Model then
 aa.Window.Acrylic=q
@@ -39730,11 +39874,6 @@ q.WindUI=aa
 q.Window=aa.Window
 q.Parent=aa.ScreenGui.Window
 
-if aa.Window then
-warn"You cannot create more than one window"
-return
-end
-
 local s=aa.Themes[q.Theme or"Dark"]
 
 
@@ -39742,11 +39881,16 @@ ak.SetTheme(s)
 
 local t=r(q)
 
-aa.Transparent=q.Transparent
+table.insert(aa.Windows,t)
+if not aa.Window then
 aa.Window=t
+end
 
-if q.Acrylic then
+aa.Transparent=q.Transparent
+
+if q.Acrylic and not aa._AcrylicInit then
 g.init()
+aa._AcrylicInit=true
 end
 
 
