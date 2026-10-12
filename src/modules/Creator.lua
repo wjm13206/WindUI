@@ -164,6 +164,16 @@ function Creator.AddSignal(Signal, Function)
 	return conn
 end
 
+function Creator.Disconnect(connection)
+	local index = table.find(Creator.Signals, connection)
+	if index then
+		table.remove(Creator.Signals, index)
+	end
+	pcall(function()
+		connection:Disconnect()
+	end)
+end
+
 function Creator.DisconnectAll()
 	for _, connection in pairs(Creator.Signals) do
 		pcall(function()

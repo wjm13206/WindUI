@@ -13,7 +13,9 @@ local UserInputService = cloneref(game:GetService("UserInputService"))
 
 function OpenButton.New(Window)
     local OpenButtonMain = {
-        Button = nil
+        Button = nil,
+        Container = nil,
+        _Destroyed = false,
     }
     
     local Icon
@@ -142,6 +144,7 @@ function OpenButton.New(Window)
     })
     
     OpenButtonMain.Button = Button
+    OpenButtonMain.Container = Container
     
     
     
@@ -189,7 +192,20 @@ function OpenButton.New(Window)
     
     
     function OpenButtonMain:Visible(v)
+        if OpenButtonMain._Destroyed then
+            return
+        end
         Container.Visible = v
+    end
+
+    function OpenButtonMain:Destroy()
+        if OpenButtonMain._Destroyed then
+            return
+        end
+        OpenButtonMain._Destroyed = true
+        pcall(function()
+            Container:Destroy()
+        end)
     end
     
     function OpenButtonMain:SetScale(scale)

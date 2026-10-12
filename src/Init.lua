@@ -1,5 +1,8 @@
 local WindUI = {
 	Window = nil,
+	Windows = {},
+	_AcrylicInit = false,
+	_AcrylicOpen = {},
 	Theme = nil,
 	Creator = require("./modules/Creator"),
 	LocalizationModule = require("./modules/Localization"),
@@ -223,6 +226,74 @@ function WindUI:SetLanguage(Value)
 	return false
 end
 
+function WindUI:_RefreshAcrylic()
+	if not self._AcrylicInit then
+		return
+	end
+	local anyOpen = false
+	for win, _ in pairs(self._AcrylicOpen) do
+		if not win.Destroyed and not win.Closed and win.Acrylic then
+			anyOpen = true
+			break
+		end
+	end
+	if anyOpen then
+		Acrylic.Enable()
+	else
+		Acrylic.Disable()
+	end
+end
+
+function WindUI:_AcrylicRegister(win)
+	if win.Acrylic then
+		self._AcrylicOpen[win] = true
+	end
+	self:_RefreshAcrylic()
+end
+
+function WindUI:_AcrylicUnregister(win)
+	self._AcrylicOpen[win] = nil
+	self:_RefreshAcrylic()
+end
+
+function WindUI:_UnregisterWindow(win)
+	self._AcrylicOpen[win] = nil
+	local index = table.find(self.Windows, win)
+	if index then
+		table.remove(self.Windows, index)
+	end
+	if self.Window == win then
+		self.Window = self.Windows[1]
+	end
+	self:_RefreshAcrylic()
+end
+
+function WindUI:DestroyAll()
+	for _, win in ipairs(table.clone(self.Windows)) do
+		if win.Destroy then
+			pcall(function()
+				win:Destroy()
+			end)
+		end
+	end
+	table.clear(self.Windows)
+	table.clear(self._AcrylicOpen)
+	self.Window = nil
+	if self.ScreenGui then
+		self.ScreenGui:Destroy()
+	end
+	if self.NotificationGui then
+		self.NotificationGui:Destroy()
+	end
+	if self.DropdownGui then
+		self.DropdownGui:Destroy()
+	end
+	if self.TooltipGui then
+		self.TooltipGui:Destroy()
+	end
+	Creator.DisconnectAll()
+end
+
 function WindUI:ToggleAcrylic(Value)
 	if WindUI.Window and WindUI.Window.AcrylicPaint and WindUI.Window.AcrylicPaint.Model then
 		WindUI.Window.Acrylic = Value
@@ -312,11 +383,6 @@ function WindUI:CreateWindow(Config)
 	Config.Window = WindUI.Window
 	Config.Parent = WindUI.ScreenGui.Window
 
-	if WindUI.Window then
-		warn("You cannot create more than one window")
-		return
-	end
-
 	local Theme = WindUI.Themes[Config.Theme or "Dark"]
 
 	--WindUI.Theme = Theme
@@ -324,11 +390,16 @@ function WindUI:CreateWindow(Config)
 
 	local Window = CreateWindow(Config)
 
-	WindUI.Transparent = Config.Transparent
-	WindUI.Window = Window
+	table.insert(WindUI.Windows, Window)
+	if not WindUI.Window then
+		WindUI.Window = Window
+	end
 
-	if Config.Acrylic then
+	WindUI.Transparent = Config.Transparent
+
+	if Config.Acrylic and not WindUI._AcrylicInit then
 		Acrylic.init()
+		WindUI._AcrylicInit = true
 	end
 
 	-- function Window:ToggleTransparency(Value)

@@ -736,6 +736,12 @@ return function(Config)
 		},
 	})
 
+	-- 每个窗口独享一份 UIScale：之前所有窗口共用 Config.WindUI.UIScaleObj，
+	-- 后建的窗口会把它抢走，导致先建的窗口失去缩放、销毁时还会连带影响其他窗口
+	Window.UIScaleObj = New("UIScale", {
+		Scale = Config.WindUI.UIScale,
+	})
+
 	Window.UIElements.Main = New("Frame", {
 		Size = UDim2.new(Window.Size.X.Scale, Window.Size.X.Offset, 0, 0),
 		Position = Window.Position,
@@ -745,7 +751,7 @@ return function(Config)
 		Active = true,
 		--GroupTransparency = 1,
 	}, {
-		Config.WindUI.UIScaleObj,
+		Window.UIScaleObj,
 		Window.AcrylicPaint and Window.AcrylicPaint.Frame or nil,
 		Blur,
 		Creator.NewRoundFrame(Window.UICorner, "Squircle", {
@@ -1274,7 +1280,10 @@ return function(Config)
 		SetSize(true)
 	end
 
-	Creator.AddSignal(Config.WindUI.ScreenGui:GetPropertyChangedSignal("AbsoluteSize"), function()
+	-- 只记录本窗口自己的连接，销毁时只断开这几个，不碰其他窗口的信号
+	Window._Connections = {}
+
+	Window._Connections.ScreenResize = Creator.AddSignal(Config.WindUI.ScreenGui:GetPropertyChangedSignal("AbsoluteSize"), function()
 		if Window.IsFullscreen then
 			SetSize()
 		end
@@ -1430,7 +1439,11 @@ return function(Config)
 
 			Window.UIElements.Main:WaitForChild("Main").Visible = true
 
-			Config.WindUI:ToggleAcrylic(true)
+			-- 只恢复自己这个窗口的亚克力效果（引用计数：还有别的窗口开着就保持全局开启）
+			Config.WindUI:_AcrylicRegister(Window)
+			if Window.AcrylicPaint and Window.AcrylicPaint.SetVisibility then
+				Window.AcrylicPaint.SetVisibility(true)
+			end
 			--end)
 		end)
 	end
@@ -1447,7 +1460,12 @@ return function(Config)
 			end)
 		end
 
-		Config.WindUI:ToggleAcrylic(false)
+		-- 最小化只藏自己：不再调用全局 ToggleAcrylic(false)，
+		-- 改为把自己从亚克力引用计数里退出，其他开着的窗口不受影响
+		Config.WindUI:_AcrylicUnregister(Window)
+		if Window.AcrylicPaint and Window.AcrylicPaint.SetVisibility then
+			Window.AcrylicPaint.SetVisibility(false)
+		end
 
 		if Window.UIElements.Main and Window.UIElements.Main:WaitForChild("Main") then
 			Window.UIElements.Main.Main.Visible = false
@@ -1539,12 +1557,32 @@ return function(Config)
 
 				task.wait(0.4)
 
-				Config.WindUI.ScreenGui:Destroy()
-				Config.WindUI.NotificationGui:Destroy()
-				Config.WindUI.DropdownGui:Destroy()
-				Config.WindUI.TooltipGui:Destroy()
+				-- 只销毁自己这个窗口的实例：主窗口 + 悬浮球，
+				-- 共用的 ScreenGui / 通知 / 下拉 / 提示容器一律不动，
+				-- 其他窗口（比如从脚本中心打开的第二个脚本窗口）不受影响。
+				-- 需要彻底卸载整个库时请调 WindUI:DestroyAll()
+				if Window.OpenButtonMain and Window.OpenButtonMain.Destroy then
+					pcall(function()
+						Window.OpenButtonMain:Destroy()
+					end)
+				end
 
-				Creator.DisconnectAll()
+				if Window.UIElements.Main then
+					pcall(function()
+						Window.UIElements.Main:Destroy()
+					end)
+				end
+
+				-- 只断开本窗口自己的几个全局监听（缩放/悬浮球点击/快捷键），
+				-- 不再 Creator.DisconnectAll() 全断
+				if Window._Connections then
+					for _, conn in pairs(Window._Connections) do
+						Creator.Disconnect(conn)
+					end
+					table.clear(Window._Connections)
+				end
+
+				Config.WindUI:_UnregisterWindow(Window)
 
 				return
 			end)
@@ -1616,8 +1654,16 @@ return function(Config)
 
 	function Window:SetUIScale(v)
 		Config.WindUI.UIScale = v
-		Tween(Config.WindUI.UIScaleObj, 0.2, { Scale = v }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-		return Window
+		-- 同步所有存活窗口各自独享的 UIScale 实例，保持和原来全局一致的行为
+		for _, win in ipairs(Config.WindUI.Windows) do
+			if win.UIScaleObj and not win.Destroyed then
+				if win == Window then
+					Tween(win.UIScaleObj, 0.2, { Scale = v }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+				else
+					win.UIScaleObj.Scale = v
+				end
+			end
+		end
 	end
 
 	function Window:SetToTheCenter()
@@ -1664,14 +1710,15 @@ return function(Config)
 	end
 
 	if Window.OpenButtonMain and Window.OpenButtonMain.Button then
-		Creator.AddSignal(Window.OpenButtonMain.Button.TextButton.MouseButton1Click, function()
-			-- OpenButtonContainer.Visible = false
-			--Window.OpenButtonMain:Visible(false)
-			Window:Open()
-		end)
+		Window._Connections.OpenButtonClick =
+			Creator.AddSignal(Window.OpenButtonMain.Button.TextButton.MouseButton1Click, function()
+				-- OpenButtonContainer.Visible = false
+				--Window.OpenButtonMain:Visible(false)
+				Window:Open()
+			end)
 	end
 
-	Creator.AddSignal(UserInputService.InputBegan, function(input, isProcessed)
+	Window._Connections.ToggleKey = Creator.AddSignal(UserInputService.InputBegan, function(input, isProcessed)
 		if isProcessed then
 			return
 		end
